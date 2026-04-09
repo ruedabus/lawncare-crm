@@ -4,6 +4,8 @@ import { createClient } from "../../../lib/supabase/server";
 import { AppShell } from "../../../components/layout/app-shell";
 import { EditCustomerForm } from "../../../components/customers/edit-customer-form";
 import { DeleteCustomerButton } from "../../../components/customers/delete-customer-button";
+import { CreateJobForm } from "../../../components/jobs/create-job-form";
+import { JobActions } from "../../../components/jobs/job-actions";
 
 type CustomerDetailsPageProps = {
   params: Promise<{
@@ -26,6 +28,12 @@ export default async function CustomerDetailsPage({
   if (error || !customer) {
     notFound();
   }
+
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("customer_id", id)
+    .order("created_at", { ascending: false });
 
   return (
     <AppShell title="Customer Details">
@@ -75,16 +83,48 @@ export default async function CustomerDetailsPage({
           <EditCustomerForm customer={customer} />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Future Sections
-          </h3>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
-            <li>Jobs for this customer</li>
-            <li>Invoices for this customer</li>
-            <li>Notes and service history</li>
-            <li>Communication log</li>
-          </ul>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <CreateJobForm customerId={customer.id} />
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Customer Jobs
+            </h3>
+
+            {jobsError ? (
+              <p className="mt-3 text-sm text-red-600">
+                Error loading jobs: {jobsError.message}
+              </p>
+            ) : null}
+
+            {!jobs?.length ? (
+              <p className="mt-3 text-sm text-slate-500">
+                No jobs yet for this customer.
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {jobs.map((job) => (
+                  <li
+                    key={job.id}
+                    className="rounded-lg border border-slate-200 p-3"
+                  >
+                    <p className="font-medium text-slate-900">{job.title}</p>
+                    <p className="text-sm text-slate-500">
+                      Status: {job.status}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Service Date: {job.service_date || "Not set"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {job.notes || "No notes"}
+                    </p>
+
+                    <JobActions job={job} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </AppShell>
