@@ -6,6 +6,8 @@ import { EditCustomerForm } from "../../../components/customers/edit-customer-fo
 import { DeleteCustomerButton } from "../../../components/customers/delete-customer-button";
 import { CreateJobForm } from "../../../components/jobs/create-job-form";
 import { JobActions } from "../../../components/jobs/job-actions";
+import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-form";
+import { InvoiceActions } from "../../../components/invoices/invoice-actions";
 
 type CustomerDetailsPageProps = {
   params: Promise<{
@@ -31,6 +33,12 @@ export default async function CustomerDetailsPage({
 
   const { data: jobs, error: jobsError } = await supabase
     .from("jobs")
+    .select("*")
+    .eq("customer_id", id)
+    .order("created_at", { ascending: false });
+
+  const { data: invoices, error: invoicesError } = await supabase
+    .from("invoices")
     .select("*")
     .eq("customer_id", id)
     .order("created_at", { ascending: false });
@@ -120,6 +128,53 @@ export default async function CustomerDetailsPage({
                     </p>
 
                     <JobActions job={job} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <CreateInvoiceForm customerId={customer.id} jobs={jobs || []} />
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Customer Invoices
+            </h3>
+
+            {invoicesError ? (
+              <p className="mt-3 text-sm text-red-600">
+                Error loading invoices: {invoicesError.message}
+              </p>
+            ) : null}
+
+            {!invoices?.length ? (
+              <p className="mt-3 text-sm text-slate-500">
+                No invoices yet for this customer.
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {invoices.map((invoice) => (
+                  <li
+                    key={invoice.id}
+                    className="rounded-lg border border-slate-200 p-3"
+                  >
+                    <p className="font-medium text-slate-900">{invoice.title}</p>
+                    <p className="text-sm text-slate-500">
+                      Amount: ${Number(invoice.amount).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Status: {invoice.status}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Due Date: {invoice.due_date || "Not set"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {invoice.notes || "No notes"}
+                    </p>
+
+                    <InvoiceActions invoice={invoice} />
                   </li>
                 ))}
               </ul>
