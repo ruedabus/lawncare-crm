@@ -1,17 +1,27 @@
-export function AppShell({
-  title,
-  children,
-}: {
+import { Sidebar } from "./sidebar";
+import { Topbar } from "./topbar";
+
+type AppShellProps = {
   title: string;
   children: React.ReactNode;
-}) {
+};
+
+export function AppShell({ title, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-slate-100">
-      <header className="border-b bg-white px-6 py-4">
-        <h1 className="text-xl font-bold">{title}</h1>
-      </header>
+      <div className="flex min-h-screen">
+        <Sidebar />
 
-      <main className="p-6">{children}</main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar title={title} />
+
+          <main className="flex-1">
+            <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+              {children}
+            </div>
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
