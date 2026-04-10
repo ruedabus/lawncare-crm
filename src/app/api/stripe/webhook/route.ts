@@ -68,7 +68,7 @@ export async function POST(request: Request) {
             subject: `Payment received — Invoice ${emailData.invoiceNumber}`,
             html,
             fromName: emailData.businessName,
-            replyTo: emailData.ownerEmail,
+            replyTo: emailData.businessEmail || undefined,
           });
         })
         .catch((err) => console.error("Webhook: email send failed", err));
