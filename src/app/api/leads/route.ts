@@ -14,20 +14,21 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data, error } = await supabase
       .from("leads")
-      .insert([
-        {
-          name: name.trim(),
-          email: email?.trim() || null,
-          phone: phone?.trim() || null,
-          address: address?.trim() || null,
-          source: source?.trim() || null,
-          status: status || "new",
-          notes: notes?.trim() || null,
-        },
-      ])
+      .insert([{
+        user_id: user.id,
+        name: name.trim(),
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        address: address?.trim() || null,
+        source: source?.trim() || null,
+        status: status || "new",
+        notes: notes?.trim() || null,
+      }])
       .select()
       .single();
 

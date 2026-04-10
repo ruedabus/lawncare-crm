@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       .from("invoices")
       .insert([
         {
+          user_id: user?.id ?? null,
           customer_id,
           job_id: job_id || null,
           title: title.trim(),

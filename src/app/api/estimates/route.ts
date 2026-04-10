@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from("estimates")
       .insert([{
+        user_id: user.id,
         customer_id,
         title: title.trim(),
         description: description?.trim() || null,

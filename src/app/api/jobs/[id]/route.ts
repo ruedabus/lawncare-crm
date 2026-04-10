@@ -73,6 +73,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
 
       await supabase.from("jobs").insert([{
+        user_id: existingJob.user_id ?? null,
         customer_id: existingJob.customer_id,
         title: existingJob.title,
         service_date: nextDate,

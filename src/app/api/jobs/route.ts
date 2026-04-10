@@ -14,10 +14,13 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data, error } = await supabase
       .from("jobs")
       .insert([{
+        user_id: user.id,
         customer_id,
         title: title.trim(),
         service_date: service_date || null,
