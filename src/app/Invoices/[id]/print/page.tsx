@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
-import { PrintTrigger, PrintButton } from "./print-trigger";
+import { PrintTrigger, PrintButton } from "../../../../components/print/print-trigger";
 
 type Params = Promise<{ id: string }>;
 

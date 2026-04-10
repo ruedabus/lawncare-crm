@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
-import { PrintTrigger, PrintButton } from "../../../invoices/[id]/print/print-trigger";
+import { PrintTrigger, PrintButton } from "../../../../components/print/print-trigger";
 
 type LineItem = { description?: string; quantity?: number; unit_price?: number; amount?: number };
 type Params = Promise<{ id: string }>;
