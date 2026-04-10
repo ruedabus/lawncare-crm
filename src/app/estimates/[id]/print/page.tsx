@@ -28,7 +28,14 @@ export default async function EstimatePrintPage({ params }: { params: Params }) 
   if (!estimate) notFound();
 
   const customer = estimate.customers as { name: string; email: string | null; phone: string | null; address: string | null } | null;
-  const biz = settings ?? {};
+  type BizSettings = {
+    business_name?: string | null;
+    business_address?: string | null;
+    business_phone?: string | null;
+    business_email?: string | null;
+    business_website?: string | null;
+  };
+  const biz: BizSettings = settings ?? {};
   const items: LineItem[] = Array.isArray(estimate.line_items) ? estimate.line_items : [];
   const total = Number(estimate.total ?? 0);
   const estimateNumber = `EST-${estimate.id.slice(0, 8).toUpperCase()}`;

@@ -56,7 +56,14 @@ export default async function InvoicePrintPage({ params }: { params: Params }) {
   const isPaid = invoice.status === "paid";
   const amount = Number(invoice.amount ?? 0);
 
-  const biz = settings ?? {};
+  type BizSettings = {
+    business_name?: string | null;
+    business_address?: string | null;
+    business_phone?: string | null;
+    business_email?: string | null;
+    business_website?: string | null;
+  };
+  const biz: BizSettings = settings ?? {};
 
   return (
     <>
