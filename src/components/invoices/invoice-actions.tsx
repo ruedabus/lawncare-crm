@@ -1,106 +1,124 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 type InvoiceActionsProps = {
   invoiceId: string;
   customerId?: string;
-  invoiceNumber?: string;
-  pdfUrl?: string | null;
   canEdit?: boolean;
   canDelete?: boolean;
   canMarkPaid?: boolean;
 };
 
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-
 export default function InvoiceActions({
   invoiceId,
   customerId,
-  invoiceNumber,
-  pdfUrl,
   canEdit = true,
   canDelete = false,
   canMarkPaid = false,
 }: InvoiceActionsProps) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
+  const [paid, setPaid] = useState(false);
+
   const buttonBase =
-    "inline-flex items-center justify-center rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/30";
+    "inline-flex items-center justify-center rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none disabled:opacity-50";
 
-  const neutralButton = cx(
-    buttonBase,
-    "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-  );
+  async function handleSend() {
+    setSending(true);
+    const res = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" });
+    setSending(false);
+    if (res.ok) {
+      setSent(true);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to send invoice. Make sure the customer has an email address.");
+    }
+  }
 
-  const primaryButton = cx(
-    buttonBase,
-    "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-  );
-
-  const dangerButton = cx(
-    buttonBase,
-    "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-  );
-
-  const editHref = customerId
-    ? `/customers/${customerId}/invoices/${invoiceId}/edit`
-    : `/invoices/${invoiceId}/edit`;
-
-  const viewHref = customerId
-    ? `/customers/${customerId}/invoices/${invoiceId}`
-    : `/invoices/${invoiceId}`;
-
-  const markPaidHref = customerId
-    ? `/customers/${customerId}/invoices/${invoiceId}/mark-paid`
-    : `/invoices/${invoiceId}/mark-paid`;
-
-  const deleteHref = customerId
-    ? `/customers/${customerId}/invoices/${invoiceId}/delete`
-    : `/invoices/${invoiceId}/delete`;
+  async function handleMarkPaid() {
+    setMarkingPaid(true);
+    const res = await fetch(`/api/invoices/${invoiceId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "paid" }),
+    });
+    setMarkingPaid(false);
+    if (res.ok) {
+      setPaid(true);
+    }
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Link href={viewHref} className={neutralButton}>
-        View
+      {/* PDF — opens print page in new tab */}
+      <Link
+        href={`/invoices/${invoiceId}/print`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${buttonBase} border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100`}
+      >
+        PDF
       </Link>
 
-      {canEdit && (
-        <Link href={editHref} className={neutralButton}>
-          Edit
-        </Link>
-      )}
+      {/* Send invoice email */}
+      <button
+        onClick={handleSend}
+        disabled={sending}
+        className={`${buttonBase} ${
+          sent
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
+        }`}
+      >
+        {sending ? "Sending…" : sent ? "✓ Sent" : "Send"}
+      </button>
 
-      {pdfUrl && (
-        <a
-          href={pdfUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={primaryButton}
+      {/* Mark paid */}
+      {(canMarkPaid && !paid) && (
+        <button
+          onClick={handleMarkPaid}
+          disabled={markingPaid}
+          className={`${buttonBase} border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100`}
         >
-          Download PDF
-        </a>
+          {markingPaid ? "Saving…" : "Mark Paid"}
+        </button>
       )}
 
-      {canMarkPaid && (
-        <form action={markPaidHref}>
-          <button type="submit" className={primaryButton}>
-            Mark Paid
-          </button>
-        </form>
-      )}
-
-      {canDelete && (
-        <form action={deleteHref}>
-          <button type="submit" className={dangerButton}>
-            Delete
-          </button>
-        </form>
-      )}
-
-      {invoiceNumber && (
-        <span className="ml-1 text-xs text-zinc-500">
-          Invoice #{invoiceNumber}
+      {paid && (
+        <span className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+          ✓ Paid
         </span>
       )}
+
+      {/* Delete */}
+      {canDelete && (
+        <DeleteButton invoiceId={invoiceId} />
+      )}
     </div>
+  );
+}
+
+function DeleteButton({ invoiceId }: { invoiceId: string }) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm("Delete this invoice?")) return;
+    setDeleting(true);
+    await fetch(`/api/invoices/${invoiceId}`, { method: "DELETE" });
+    // Refresh the page to reflect deletion
+    window.location.reload();
+  }
+
+  return (
+    <button
+      onClick={handleDelete}
+      disabled={deleting}
+      className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+    >
+      {deleting ? "Deleting…" : "Delete"}
+    </button>
   );
 }

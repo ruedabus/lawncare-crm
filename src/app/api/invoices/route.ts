@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../lib/supabase/server";
+import { sendEmail } from "../../../lib/email/send";
+import { buildInvoiceEmailData } from "../../../lib/email/invoice-email-data";
+import { invoiceCreatedEmail } from "../../../lib/email/templates";
 
 export async function POST(request: Request) {
   try {
@@ -15,8 +18,11 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-    const parsedAmount = Number(amount);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
+    const parsedAmount = Number(amount);
     if (Number.isNaN(parsedAmount)) {
       return NextResponse.json(
         { error: "Amount must be a valid number." },
@@ -43,6 +49,20 @@ export async function POST(request: Request) {
     if (error) {
       console.error("SUPABASE INVOICE INSERT ERROR:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Auto-send invoice email (fire-and-forget — don't block the response)
+    if (user) {
+      buildInvoiceEmailData(supabase, data.id, user.id).then((emailData) => {
+        if (!emailData) return;
+        sendEmail({
+          to: emailData.customerEmail,
+          fromName: emailData.businessName,
+          subject: `Invoice ${emailData.invoiceNumber} from ${emailData.businessName}`,
+          html: invoiceCreatedEmail(emailData),
+          replyTo: emailData.businessEmail || undefined,
+        });
+      }).catch(console.error);
     }
 
     return NextResponse.json({ invoice: data }, { status: 201 });

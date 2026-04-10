@@ -6,6 +6,7 @@ import { JobActions } from "../../../components/jobs/job-actions";
 import { CreateJobForm } from "../../../components/jobs/create-job-form";
 import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-form";
 import InvoiceActions from "../../../components/invoices/invoice-actions";
+import { EditCustomerForm } from "../../../components/customers/edit-customer-form";
 
 type CustomerDetailsPageProps = {
   params: Promise<{
@@ -185,6 +186,14 @@ export default async function CustomerDetailsPage({
           </section>
 
           <aside className="space-y-6">
+            <EditCustomerForm customer={{
+              id: customer.id,
+              name: customer.name,
+              email: customer.email,
+              phone: customer.phone,
+              address: customer.address,
+            }} />
+
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900">
                 Create Invoice

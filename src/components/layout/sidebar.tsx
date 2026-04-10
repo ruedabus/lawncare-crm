@@ -12,11 +12,13 @@ import {
   CheckCircleIcon,
   Cog6ToothIcon,
   WrenchScrewdriverIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/customers", label: "Customers", icon: UsersIcon },
+  { href: "/leads", label: "Leads", icon: FunnelIcon },
   { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon },
   { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon },
   { href: "/invoices", label: "Invoices", icon: DocumentTextIcon },

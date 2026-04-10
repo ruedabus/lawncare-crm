@@ -27,6 +27,8 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
   const [invoices, setInvoices] = useState(initial);
   const [activeTab, setActiveTab] = useState("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
   const filtered =
     activeTab === "all"
@@ -51,6 +53,18 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
       setInvoices((prev) =>
         prev.map((inv) => (inv.id === id ? { ...inv, status: "paid" } : inv))
       );
+    }
+  }
+
+  async function sendInvoice(id: string) {
+    setSendingId(id);
+    const res = await fetch(`/api/invoices/${id}/send`, { method: "POST" });
+    setSendingId(null);
+    if (res.ok) {
+      setSentIds((prev) => new Set([...prev, id]));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to send invoice.");
     }
   }
 
@@ -142,7 +156,7 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
                   {inv.status !== "paid" && (
                     <button
                       onClick={() => markPaid(inv.id)}
@@ -152,6 +166,29 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
                       Mark Paid
                     </button>
                   )}
+                  <button
+                    onClick={() => sendInvoice(inv.id)}
+                    disabled={sendingId === inv.id}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                      sentIds.has(inv.id)
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                    }`}
+                  >
+                    {sendingId === inv.id
+                      ? "Sending…"
+                      : sentIds.has(inv.id)
+                      ? "✓ Sent"
+                      : "Send"}
+                  </button>
+                  <Link
+                    href={`/invoices/${inv.id}/print`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+                  >
+                    PDF
+                  </Link>
                   <button
                     onClick={() => deleteInvoice(inv.id)}
                     disabled={loadingId === inv.id}
