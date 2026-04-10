@@ -151,7 +151,7 @@ export default async function ReportsPage() {
     customers: { id: string; name: string | null } | null;
   };
 
-  const typedAllInvoices: RawInvoice[] = (allInvoices ?? []) as RawInvoice[];
+  const typedAllInvoices: RawInvoice[] = (allInvoices ?? []) as unknown as RawInvoice[];
 
   // ── Process jobs ────────────────────────────────────────────────────────
 
