@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function CreateCustomerForm() {
   const router = useRouter();
@@ -56,79 +56,93 @@ export function CreateCustomerForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-4 text-lg font-semibold">Add Customer</h2>
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-5">
+        <h2 className="text-xl font-semibold text-slate-900">Add Customer</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Create a new customer record for billing and scheduling.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Name
-          </label>
+        <Field label="Name">
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             placeholder="John Doe"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Email
-          </label>
+        <Field label="Email">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             placeholder="john@email.com"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Phone
-          </label>
+        <Field label="Phone">
           <input
             type="text"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             placeholder="555-123-4567"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Address
-          </label>
+        <Field label="Address">
           <textarea
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
-            placeholder="123 Main St"
             rows={3}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+            placeholder="123 Main St"
           />
-        </div>
+        </Field>
 
         {errorMessage ? (
-          <p className="text-sm text-red-600">{errorMessage}</p>
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </p>
         ) : null}
 
         {successMessage ? (
-          <p className="text-sm text-green-600">{successMessage}</p>
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {successMessage}
+          </p>
         ) : null}
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-60"
+          className="inline-flex rounded-xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
         >
           {saving ? "Saving..." : "Save Customer"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-slate-700">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

@@ -57,9 +57,7 @@ export function JobActions({ job }: JobActionsProps) {
       `Are you sure you want to delete "${job.title}"?`
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setLoading(true);
     setErrorMessage("");
@@ -85,10 +83,15 @@ export function JobActions({ job }: JobActionsProps) {
     }
   }
 
+  const buttonBase =
+    "rounded-lg px-3 py-2 text-xs font-medium transition disabled:opacity-60";
+
   return (
-    <div className="mt-3 space-y-3">
+    <div className="mt-4 space-y-3">
       {errorMessage ? (
-        <p className="text-sm text-red-600">{errorMessage}</p>
+        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {errorMessage}
+        </p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">
@@ -96,7 +99,7 @@ export function JobActions({ job }: JobActionsProps) {
           type="button"
           disabled={loading}
           onClick={() => updateStatus("scheduled")}
-          className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 disabled:opacity-60"
+          className={`${buttonBase} border border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
         >
           Scheduled
         </button>
@@ -105,7 +108,7 @@ export function JobActions({ job }: JobActionsProps) {
           type="button"
           disabled={loading}
           onClick={() => updateStatus("in_progress")}
-          className="rounded-lg border border-blue-300 px-3 py-1 text-sm text-blue-700 disabled:opacity-60"
+          className={`${buttonBase} border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100`}
         >
           In Progress
         </button>
@@ -114,7 +117,7 @@ export function JobActions({ job }: JobActionsProps) {
           type="button"
           disabled={loading}
           onClick={() => updateStatus("completed")}
-          className="rounded-lg border border-green-300 px-3 py-1 text-sm text-green-700 disabled:opacity-60"
+          className={`${buttonBase} border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100`}
         >
           Completed
         </button>
@@ -123,7 +126,7 @@ export function JobActions({ job }: JobActionsProps) {
           type="button"
           disabled={loading}
           onClick={() => updateStatus("cancelled")}
-          className="rounded-lg border border-yellow-300 px-3 py-1 text-sm text-yellow-700 disabled:opacity-60"
+          className={`${buttonBase} border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100`}
         >
           Cancelled
         </button>
@@ -132,7 +135,7 @@ export function JobActions({ job }: JobActionsProps) {
           type="button"
           disabled={loading}
           onClick={deleteJob}
-          className="rounded-lg border border-red-300 px-3 py-1 text-sm text-red-700 disabled:opacity-60"
+          className={`${buttonBase} border border-red-200 bg-red-50 text-red-700 hover:bg-red-100`}
         >
           Delete Job
         </button>

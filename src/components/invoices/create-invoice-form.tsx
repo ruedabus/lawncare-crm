@@ -61,7 +61,6 @@ export function CreateInvoiceForm({
       setDueDate("");
       setJobId("");
       setNotes("");
-
       window.location.reload();
     } catch {
       setErrorMessage("Unable to create invoice.");
@@ -71,59 +70,54 @@ export function CreateInvoiceForm({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h3 className="text-lg font-semibold text-slate-900">Create Invoice</h3>
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-5">
+        <h3 className="text-xl font-semibold text-slate-900">Create Invoice</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Bill this customer for completed or scheduled work.
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Invoice Title
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField label="Invoice Title">
           <input
             type="text"
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             placeholder="Lawn mowing invoice"
           />
+        </FormField>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Amount">
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              placeholder="75.00"
+            />
+          </FormField>
+
+          <FormField label="Due Date">
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+            />
+          </FormField>
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Amount
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            required
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
-            placeholder="75.00"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Due Date
-          </label>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Related Job
-          </label>
+        <FormField label="Related Job">
           <select
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
           >
             <option value="">No related job</option>
             {jobs.map((job) => (
@@ -132,37 +126,55 @@ export function CreateInvoiceForm({
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Notes
-          </label>
+        <FormField label="Notes">
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
-            rows={3}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+            rows={4}
             placeholder="Invoice notes"
           />
-        </div>
+        </FormField>
 
         {errorMessage ? (
-          <p className="text-sm text-red-600">{errorMessage}</p>
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
         ) : null}
 
         {successMessage ? (
-          <p className="text-sm text-green-600">{successMessage}</p>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {successMessage}
+          </div>
         ) : null}
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-60"
+          className="inline-flex rounded-xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
         >
           {saving ? "Saving..." : "Create Invoice"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-slate-700">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

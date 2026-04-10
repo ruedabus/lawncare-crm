@@ -60,14 +60,28 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   active
-                    ? "bg-slate-900 text-white shadow-sm"
+                    ? "bg-slate-950 text-white shadow-sm"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <Icon
+                  className={clsx(
+                    "h-5 w-5 shrink-0 transition-colors",
+                    active
+                      ? "text-white"
+                      : "text-slate-500 group-hover:text-slate-900"
+                  )}
+                />
+                <span
+                  className={clsx(
+                    "truncate transition-colors",
+                    active ? "text-white" : "text-slate-700 group-hover:text-slate-900"
+                  )}
+                >
+                  {item.label}
+                </span>
               </Link>
             );
           })}
