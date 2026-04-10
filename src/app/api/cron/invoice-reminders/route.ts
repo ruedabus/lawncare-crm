@@ -90,7 +90,8 @@ export async function GET(request: Request) {
   const errors: string[] = [];
 
   for (const inv of invoices) {
-    const customer = inv.customers as { id: string; email: string | null } | null;
+    const rawCustomer = inv.customers;
+    const customer = (Array.isArray(rawCustomer) ? rawCustomer[0] : rawCustomer) as { id: string; email: string | null } | null;
     if (!customer?.email) continue; // skip — no email on file
 
     const dueDate = inv.due_date as string;
