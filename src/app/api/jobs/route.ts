@@ -4,7 +4,7 @@ import { createClient } from "../../../lib/supabase/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { customer_id, title, service_date, status, notes } = body;
+    const { customer_id, title, service_date, status, notes, is_recurring, recurrence_weeks } = body;
 
     if (!customer_id || !title || !title.trim()) {
       return NextResponse.json(
@@ -17,15 +17,15 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from("jobs")
-      .insert([
-        {
-          customer_id,
-          title: title.trim(),
-          service_date: service_date || null,
-          status: status || "scheduled",
-          notes: notes?.trim() || null,
-        },
-      ])
+      .insert([{
+        customer_id,
+        title: title.trim(),
+        service_date: service_date || null,
+        status: status || "scheduled",
+        notes: notes?.trim() || null,
+        is_recurring: is_recurring ?? false,
+        recurrence_weeks: is_recurring ? (recurrence_weeks ?? 1) : null,
+      }])
       .select()
       .single();
 

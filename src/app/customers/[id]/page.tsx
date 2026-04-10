@@ -176,6 +176,7 @@ export default async function CustomerDetailsPage({
                           canEdit
                           canDelete
                           canMarkPaid={invoice.status !== "paid"}
+                          canPayOnline={invoice.status !== "paid"}
                         />
                       </div>
                     </div>

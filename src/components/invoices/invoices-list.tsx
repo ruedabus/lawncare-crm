@@ -29,6 +29,7 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const filtered =
     activeTab === "all"
@@ -65,6 +66,27 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
     } else {
       const data = await res.json().catch(() => ({}));
       alert(data.error ?? "Failed to send invoice.");
+    }
+  }
+
+  async function payOnline(id: string) {
+    setPayingId(id);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId: id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "Could not start payment.");
+        setPayingId(null);
+      }
+    } catch {
+      alert("Network error. Please try again.");
+      setPayingId(null);
     }
   }
 
@@ -157,6 +179,15 @@ export function InvoicesList({ invoices: initial }: InvoicesListProps) {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap gap-2">
+                  {inv.status !== "paid" && (
+                    <button
+                      onClick={() => payOnline(inv.id)}
+                      disabled={payingId === inv.id}
+                      className="rounded-lg border border-emerald-300 bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {payingId === inv.id ? "Redirecting…" : "💳 Pay Now"}
+                    </button>
+                  )}
                   {inv.status !== "paid" && (
                     <button
                       onClick={() => markPaid(inv.id)}

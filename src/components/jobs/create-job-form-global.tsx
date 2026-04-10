@@ -17,6 +17,8 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
   const [serviceDate, setServiceDate] = useState("");
   const [status, setStatus] = useState("scheduled");
   const [notes, setNotes] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceWeeks, setRecurrenceWeeks] = useState(1);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -37,6 +39,8 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
           service_date: serviceDate || null,
           status,
           notes,
+          is_recurring: isRecurring,
+          recurrence_weeks: isRecurring ? recurrenceWeeks : null,
         }),
       });
 
@@ -54,6 +58,8 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
       setServiceDate("");
       setStatus("scheduled");
       setNotes("");
+      setIsRecurring(false);
+      setRecurrenceWeeks(1);
       window.location.reload();
     } catch {
       setErrorMessage("Unable to create job.");
@@ -132,6 +138,40 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
             placeholder="Any notes for this job…"
           />
         </Field>
+
+        {/* Recurring toggle */}
+        <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+          <label className="flex cursor-pointer items-center gap-3">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+              />
+              <div className={`h-5 w-9 rounded-full transition-colors ${isRecurring ? "bg-emerald-500" : "bg-slate-300"}`} />
+              <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isRecurring ? "translate-x-4" : "translate-x-0.5"}`} />
+            </div>
+            <span className="text-sm font-medium text-slate-700">Recurring job</span>
+          </label>
+
+          {isRecurring && (
+            <div className="flex items-center gap-2 pl-1">
+              <span className="text-sm text-slate-600">Repeats every</span>
+              <select
+                value={recurrenceWeeks}
+                onChange={(e) => setRecurrenceWeeks(Number(e.target.value))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+              >
+                <option value={1}>1 week</option>
+                <option value={2}>2 weeks</option>
+                <option value={3}>3 weeks</option>
+                <option value={4}>4 weeks</option>
+              </select>
+              <span className="text-xs text-slate-400">— next job auto-created when this one is completed</span>
+            </div>
+          )}
+        </div>
 
         {errorMessage ? (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

@@ -9,6 +9,7 @@ type InvoiceActionsProps = {
   canEdit?: boolean;
   canDelete?: boolean;
   canMarkPaid?: boolean;
+  canPayOnline?: boolean;
 };
 
 export default function InvoiceActions({
@@ -17,11 +18,13 @@ export default function InvoiceActions({
   canEdit = true,
   canDelete = false,
   canMarkPaid = false,
+  canPayOnline = false,
 }: InvoiceActionsProps) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const buttonBase =
     "inline-flex items-center justify-center rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none disabled:opacity-50";
@@ -35,6 +38,27 @@ export default function InvoiceActions({
     } else {
       const data = await res.json().catch(() => ({}));
       alert(data.error ?? "Failed to send invoice. Make sure the customer has an email address.");
+    }
+  }
+
+  async function handlePayOnline() {
+    setRedirecting(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "Could not start payment. Please try again.");
+        setRedirecting(false);
+      }
+    } catch {
+      alert("Network error. Please try again.");
+      setRedirecting(false);
     }
   }
 
@@ -76,7 +100,18 @@ export default function InvoiceActions({
         {sending ? "Sending…" : sent ? "✓ Sent" : "Send"}
       </button>
 
-      {/* Mark paid */}
+      {/* Pay Now via Stripe */}
+      {canPayOnline && !paid && (
+        <button
+          onClick={handlePayOnline}
+          disabled={redirecting}
+          className={`${buttonBase} border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50`}
+        >
+          {redirecting ? "Redirecting…" : "💳 Pay Now"}
+        </button>
+      )}
+
+      {/* Mark paid manually */}
       {(canMarkPaid && !paid) && (
         <button
           onClick={handleMarkPaid}

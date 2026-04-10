@@ -201,6 +201,11 @@ export default async function DashboardPage() {
   }
 
   // ── Real stats ──────────────────────────────────────────────────────────
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0, 0, 0, 0);
+
   const [
     { count: totalCustomers },
     { count: activeJobs },
@@ -208,6 +213,7 @@ export default async function DashboardPage() {
     { data: paidRevRows },
     { count: scheduledJobs },
     { count: completedToday },
+    { data: chartInvoices },
   ] = await Promise.all([
     supabase.from("customers").select("*", { count: "exact", head: true }),
     supabase
@@ -235,12 +241,39 @@ export default async function DashboardPage() {
       .select("*", { count: "exact", head: true })
       .eq("status", "completed")
       .gte("updated_at", new Date().toISOString().slice(0, 10)),
+    supabase
+      .from("invoices")
+      .select("amount, created_at")
+      .eq("status", "paid")
+      .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
 
   const monthlyRevenue = (paidRevRows ?? []).reduce(
     (sum, row) => sum + (row.amount ?? 0),
     0
   );
+
+  // ── Build 6-month chart data ─────────────────────────────────────────────
+  const chartMonths: { label: string; value: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    chartMonths.push({
+      label: d.toLocaleDateString("en-US", { month: "short" }),
+      value: 0,
+    });
+  }
+  (chartInvoices ?? []).forEach((inv) => {
+    const d = new Date(inv.created_at);
+    const monthsBack =
+      (new Date().getFullYear() - d.getFullYear()) * 12 +
+      (new Date().getMonth() - d.getMonth());
+    const idx = 5 - monthsBack;
+    if (idx >= 0 && idx < 6) {
+      chartMonths[idx].value += Number(inv.amount) || 0;
+    }
+  });
+  const chartMax = Math.max(...chartMonths.map((m) => m.value), 1);
 
   // ── Recent Activity ─────────────────────────────────────────────────────
   const [
@@ -409,29 +442,50 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="mt-6 h-72 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
-              <div className="flex h-full flex-col justify-between">
+            <div className="mt-6">
+              {/* Bar chart */}
+              <div className="flex items-end gap-2 h-48">
+                {chartMonths.map((month) => {
+                  const pct = Math.round((month.value / chartMax) * 100);
+                  return (
+                    <div key={month.label} className="flex flex-1 flex-col items-center gap-1">
+                      <p className="text-xs font-semibold text-slate-700">
+                        {month.value > 0
+                          ? `$${month.value >= 1000
+                              ? `${(month.value / 1000).toFixed(1)}k`
+                              : month.value.toFixed(0)}`
+                          : ""}
+                      </p>
+                      <div className="w-full flex items-end" style={{ height: "140px" }}>
+                        <div
+                          className="w-full rounded-t-md bg-emerald-500 transition-all"
+                          style={{ height: pct > 0 ? `${Math.max(pct, 4)}%` : "4px", opacity: pct > 0 ? 1 : 0.25 }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">{month.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Summary row */}
+              <div className="mt-4 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
                 <div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Revenue Chart Placeholder
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    We can wire this to live revenue data next.
+                  <p className="text-xs text-slate-500">This Month</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    ${monthlyRevenue.toLocaleString("en-US", { minimumFractionDigits: 0 })}
                   </p>
                 </div>
-
-                <div className="grid grid-cols-6 gap-3">
-                  {[55, 80, 40, 95, 60, 72].map((height, index) => (
-                    <div
-                      key={index}
-                      className="flex items-end justify-center rounded-xl bg-white p-2"
-                    >
-                      <div
-                        className="w-full rounded-md bg-green-500"
-                        style={{ height: `${height}%` }}
-                      />
-                    </div>
-                  ))}
+                <div>
+                  <p className="text-xs text-slate-500">6-Month Total</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    ${chartMonths.reduce((s, m) => s + m.value, 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Monthly Avg</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    ${Math.round(chartMonths.reduce((s, m) => s + m.value, 0) / 6).toLocaleString("en-US")}
+                  </p>
                 </div>
               </div>
             </div>

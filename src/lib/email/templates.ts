@@ -225,3 +225,90 @@ export function invoicePaidEmail(d: InvoiceEmailData): string {
 
   return emailShell(content, "#059669");
 }
+
+// ── Estimate sent ─────────────────────────────────────────────────────────────
+
+type LineItem = {
+  description?: string;
+  quantity?: number;
+  unit_price?: number;
+  amount?: number;
+};
+
+export type EstimateEmailData = {
+  estimateId: string;
+  estimateNumber: string;
+  estimateTitle: string;
+  lineItems: LineItem[];
+  total: number;
+  validUntil: string | null;
+  customerName: string;
+  businessName: string;
+  businessEmail: string;
+  businessPhone?: string;
+  appUrl?: string;
+};
+
+export function estimateSentEmail(d: EstimateEmailData): string {
+  const printUrl = d.appUrl ? `${d.appUrl}/estimates/${d.estimateId}/print` : null;
+
+  const lineItemRows = d.lineItems.length
+    ? d.lineItems
+        .map(
+          (item) => `
+          <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:10px 0;font-size:13px;color:#0f172a;">
+              ${item.description ?? "Service"}
+              ${item.quantity && item.quantity !== 1 ? `<span style="color:#94a3b8;"> × ${item.quantity}</span>` : ""}
+            </td>
+            <td style="padding:10px 0;font-size:13px;color:#0f172a;text-align:right;font-weight:600;">
+              $${Number(item.amount ?? 0).toFixed(2)}
+            </td>
+          </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="2" style="padding:10px 0;font-size:13px;color:#94a3b8;">No line items</td></tr>`;
+
+  const content = `
+    <tr><td style="padding:32px 32px 8px;">
+      <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+        Your estimate is ready
+      </p>
+      <p style="margin:0;font-size:15px;color:#475569;">
+        Hi ${d.customerName}, ${d.businessName} has prepared an estimate for you. Details are below.
+      </p>
+    </td></tr>
+
+    <tr><td style="padding:24px 32px 0;">
+      <p style="margin:0 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;">
+        ${d.estimateNumber} · ${d.estimateTitle}
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid #e2e8f0;margin-top:8px;">
+        ${lineItemRows}
+        <tr style="border-top:2px solid #e2e8f0;">
+          <td style="padding:12px 0;font-size:14px;font-weight:700;color:#0f172a;">Total</td>
+          <td style="padding:12px 0;font-size:16px;font-weight:700;color:#0f172a;text-align:right;">
+            $${d.total.toFixed(2)}
+          </td>
+        </tr>
+      </table>
+      ${d.validUntil ? `<p style="margin:8px 0 0;font-size:12px;color:#94a3b8;">This estimate is valid until ${d.validUntil}.</p>` : ""}
+    </td></tr>
+
+    ${printUrl ? `
+    <tr><td style="padding:24px 32px 32px;">
+      <a href="${printUrl}" style="display:inline-block;background:#0f172a;color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;">
+        View Estimate
+      </a>
+    </td></tr>` : ""}
+
+    <tr><td style="padding:0 32px 32px;font-size:13px;color:#64748b;">
+      <p style="margin:0;">Questions? Contact us at
+        <a href="mailto:${d.businessEmail}" style="color:#059669;">${d.businessEmail}</a>
+        ${d.businessPhone ? ` or call ${d.businessPhone}` : ""}.
+      </p>
+    </td></tr>
+  `;
+
+  return emailShell(content, "#0f172a");
+}

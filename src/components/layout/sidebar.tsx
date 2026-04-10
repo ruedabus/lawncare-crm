@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import clsx from "clsx";
 import {
   HomeIcon,
@@ -11,18 +12,21 @@ import {
   DocumentTextIcon,
   CheckCircleIcon,
   Cog6ToothIcon,
-  WrenchScrewdriverIcon,
   FunnelIcon,
+  CalculatorIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/customers", label: "Customers", icon: UsersIcon },
   { href: "/leads", label: "Leads", icon: FunnelIcon },
+  { href: "/estimates", label: "Estimates", icon: CalculatorIcon },
   { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon },
   { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon },
   { href: "/invoices", label: "Invoices", icon: DocumentTextIcon },
   { href: "/tasks", label: "Tasks", icon: CheckCircleIcon },
+  { href: "/reports", label: "Reports", icon: ChartBarIcon },
   { href: "/settings", label: "Settings", icon: Cog6ToothIcon },
 ];
 
@@ -31,18 +35,17 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-      <div className="border-b border-slate-200 px-6 py-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 shadow-sm">
-            <WrenchScrewdriverIcon className="h-5 w-5 text-white" />
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="truncate text-sm font-bold text-slate-900">
-              LawnCare CRM
-            </h1>
-            <p className="text-xs text-slate-500">Operations Platform</p>
-          </div>
+      <div className="border-b border-slate-200 px-5 py-4">
+        <div className="flex flex-col items-center gap-1">
+          <Image
+            src="/YardPilot-logo.png"
+            alt="YardPilot logo"
+            width={200}
+            height={75}
+            className="object-contain"
+            priority
+          />
+          <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">CRM</p>
         </div>
       </div>
 
