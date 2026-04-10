@@ -36,7 +36,12 @@ export async function POST(_: Request, context: RouteContext) {
       );
     }
 
-    const biz = settings ?? {};
+    type BizSettings = {
+      business_name?: string | null;
+      business_email?: string | null;
+      business_phone?: string | null;
+    };
+    const biz: BizSettings = settings ?? {};
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
     const estimateNumber = `EST-${estimate.id.slice(0, 8).toUpperCase()}`;
 
