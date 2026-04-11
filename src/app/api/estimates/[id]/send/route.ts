@@ -47,8 +47,8 @@ export async function POST(_: Request, context: RouteContext) {
 
     const result = await sendEmail({
       to: customer.email,
-      fromName: biz.business_name || "LawnCare CRM",
-      subject: `Estimate ${estimateNumber} from ${biz.business_name || "LawnCare CRM"}`,
+      fromName: biz.business_name || "YardPilot",
+      subject: `Estimate ${estimateNumber} from ${biz.business_name || "YardPilot"}`,
       html: estimateSentEmail({
         estimateId: estimate.id,
         estimateNumber,
@@ -61,7 +61,7 @@ export async function POST(_: Request, context: RouteContext) {
             })
           : null,
         customerName: customer.name,
-        businessName: biz.business_name || "LawnCare CRM",
+        businessName: biz.business_name || "YardPilot",
         businessEmail: biz.business_email || "",
         businessPhone: biz.business_phone ?? undefined,
         appUrl,

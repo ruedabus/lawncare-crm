@@ -40,7 +40,7 @@ function emailShell(content: string, accentColor = "#059669") {
         <!-- Header band -->
         <tr>
           <td style="background:${accentColor};padding:28px 32px;">
-            <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">LawnCare CRM</p>
+            <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">YardPilot</p>
           </td>
         </tr>
 
@@ -51,7 +51,7 @@ function emailShell(content: string, accentColor = "#059669") {
         <tr>
           <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;">
             <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
-              This email was sent automatically by LawnCare CRM.<br />
+              This email was sent automatically by YardPilot.<br />
               Please do not reply directly to this email.
             </p>
           </td>

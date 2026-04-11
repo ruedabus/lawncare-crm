@@ -71,7 +71,7 @@ export async function buildInvoiceEmailData(
         })
       : null,
     customerName: customer.name,
-    businessName: biz.business_name || "LawnCare CRM",
+    businessName: biz.business_name || "YardPilot",
     businessEmail: biz.business_email || "",
     businessPhone: biz.business_phone ?? undefined,
     businessWebsite: biz.business_website ?? undefined,

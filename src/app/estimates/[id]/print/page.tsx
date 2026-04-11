@@ -74,7 +74,7 @@ export default async function EstimatePrintPage({ params }: { params: Params }) 
           <div className="bg-slate-900 px-10 py-8 text-white">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-2xl font-bold">{biz.business_name || "LawnCare CRM"}</h1>
+                <h1 className="text-2xl font-bold">{biz.business_name || "YardPilot"}</h1>
                 {biz.business_address && <p className="mt-1 text-sm text-slate-400 whitespace-pre-line">{biz.business_address}</p>}
                 {biz.business_phone && <p className="text-sm text-slate-400">{biz.business_phone}</p>}
                 {biz.business_email && <p className="text-sm text-slate-400">{biz.business_email}</p>}

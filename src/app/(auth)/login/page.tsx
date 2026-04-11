@@ -39,7 +39,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">
-            LawnCare CRM
+            YardPilot
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Sign in to your business dashboard

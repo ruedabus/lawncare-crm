@@ -95,7 +95,7 @@ export default async function InvoicePrintPage({ params }: { params: Params }) {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                  {biz.business_name || "LawnCare CRM"}
+                  {biz.business_name || "YardPilot"}
                 </h1>
                 {biz.business_address && (
                   <p className="mt-1 text-sm text-slate-400 whitespace-pre-line">

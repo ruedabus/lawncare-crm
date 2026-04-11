@@ -8,7 +8,7 @@ export function Topbar({ title }: TopbarProps) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">
-            LawnCare CRM
+            YardPilot
           </p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">
             {title}
