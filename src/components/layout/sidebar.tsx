@@ -40,12 +40,12 @@ export function Sidebar() {
           <Image
             src="/YardPilot-logo.png"
             alt="YardPilot logo"
-            width={224}
-            height={84}
+            width={256}
+            height={96}
             className="object-contain"
             priority
           />
-          <p className="text-sm font-bold tracking-widest text-slate-600 uppercase">CRM</p>
+          <p className="text-lg font-extrabold tracking-widest uppercase" style={{ color: "#1a5c2a" }}>CRM</p>
         </div>
       </div>
 
