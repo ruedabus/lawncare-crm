@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "../../../../lib/supabase/server";
+import { createServiceClient } from "../../../../lib/supabase/server";
 import { verifyWebhookSignature } from "../../../../lib/stripe/api";
 import { buildInvoiceEmailData } from "../../../../lib/email/invoice-email-data";
 import { invoicePaidEmail } from "../../../../lib/email/templates";
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const supabase = await createClient();
+    const supabase = createServiceClient();
 
     // Mark invoice as paid
     const { data: invoice, error } = await supabase
