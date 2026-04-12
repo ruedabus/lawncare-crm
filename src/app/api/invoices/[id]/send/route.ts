@@ -3,6 +3,7 @@ import { createClient } from "../../../../../lib/supabase/server";
 import { sendEmail } from "../../../../../lib/email/send";
 import { buildInvoiceEmailData } from "../../../../../lib/email/invoice-email-data";
 import { invoiceCreatedEmail } from "../../../../../lib/email/templates";
+import { createCheckoutSession } from "../../../../../lib/stripe/api";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -33,11 +34,32 @@ export async function POST(_: Request, context: RouteContext) {
       );
     }
 
+    // Generate a Stripe checkout URL to embed directly in the email
+    let payUrl: string | undefined;
+    if (process.env.STRIPE_SECRET_KEY && emailData.amount > 0) {
+      try {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+        const session = await createCheckoutSession({
+          invoiceId: id,
+          invoiceNumber: emailData.invoiceNumber,
+          amountCents: Math.round(emailData.amount * 100),
+          customerEmail: emailData.customerEmail,
+          customerName: emailData.customerName,
+          description: emailData.invoiceTitle,
+          successUrl: `${appUrl}/payment-success?invoice=${id}`,
+          cancelUrl: `${appUrl}/payment-cancelled`,
+        });
+        payUrl = session.url;
+      } catch {
+        // Non-fatal — email sends without Pay Now button if Stripe fails
+      }
+    }
+
     const result = await sendEmail({
       to: emailData.customerEmail,
       fromName: emailData.businessName,
       subject: `Invoice ${emailData.invoiceNumber} from ${emailData.businessName}`,
-      html: invoiceCreatedEmail(emailData),
+      html: invoiceCreatedEmail({ ...emailData, payUrl }),
       replyTo: emailData.businessEmail || undefined,
     });
 

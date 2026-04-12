@@ -3,6 +3,7 @@ import { createClient } from "../../../lib/supabase/server";
 import { sendEmail } from "../../../lib/email/send";
 import { buildInvoiceEmailData } from "../../../lib/email/invoice-email-data";
 import { invoiceCreatedEmail } from "../../../lib/email/templates";
+import { createCheckoutSession } from "../../../lib/stripe/api";
 
 export async function POST(request: Request) {
   try {
@@ -54,13 +55,35 @@ export async function POST(request: Request) {
 
     // Auto-send invoice email (fire-and-forget — don't block the response)
     if (user) {
-      buildInvoiceEmailData(supabase, data.id, user.id).then((emailData) => {
+      buildInvoiceEmailData(supabase, data.id, user.id).then(async (emailData) => {
         if (!emailData) return;
+
+        // Generate a Stripe Pay Now URL to embed in the email
+        let payUrl: string | undefined;
+        if (process.env.STRIPE_SECRET_KEY && emailData.amount > 0) {
+          try {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+            const session = await createCheckoutSession({
+              invoiceId: data.id,
+              invoiceNumber: emailData.invoiceNumber,
+              amountCents: Math.round(emailData.amount * 100),
+              customerEmail: emailData.customerEmail,
+              customerName: emailData.customerName,
+              description: emailData.invoiceTitle,
+              successUrl: `${appUrl}/payment-success?invoice=${data.id}`,
+              cancelUrl: `${appUrl}/payment-cancelled`,
+            });
+            payUrl = session.url;
+          } catch {
+            // Non-fatal
+          }
+        }
+
         sendEmail({
           to: emailData.customerEmail,
           fromName: emailData.businessName,
           subject: `Invoice ${emailData.invoiceNumber} from ${emailData.businessName}`,
-          html: invoiceCreatedEmail(emailData),
+          html: invoiceCreatedEmail({ ...emailData, payUrl }),
           replyTo: emailData.businessEmail || undefined,
         });
       }).catch(console.error);
