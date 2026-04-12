@@ -5,9 +5,9 @@ export const metadata: Metadata = {
   title: "YardPilot",
   description: "CRM for lawn care businesses",
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: "/favicon-32x32.png",
+    shortcut: "/favicon-32x32.png",
+    apple: "/favicon-32x32.png",
   },
 };
 
