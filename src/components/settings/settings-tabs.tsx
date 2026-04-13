@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 
 type Settings = {
@@ -25,11 +25,12 @@ type UserInfo = {
   name: string;
 };
 
-type Tab = "business" | "account" | "location" | "notifications";
+type Tab = "business" | "account" | "location" | "notifications" | "security";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "business", label: "Business Profile" },
   { id: "account", label: "Account" },
+  { id: "security", label: "Security" },
   { id: "location", label: "Service Location" },
   { id: "notifications", label: "Notifications" },
 ];
@@ -73,6 +74,7 @@ export function SettingsTabs({
       {activeTab === "location" && (
         <ServiceLocationTab settings={settings} />
       )}
+      {activeTab === "security" && <SecurityTab />}
       {activeTab === "notifications" && (
         <NotificationsTab settings={settings} />
       )}
@@ -512,6 +514,247 @@ function NotificationsTab({ settings }: { settings: Settings }) {
         />
         <SaveRow status={status} errorMsg={errorMsg} />
       </form>
+    </SettingsCard>
+  );
+}
+
+// ── Security (MFA) ───────────────────────────────────────────────────────────
+
+function SecurityTab() {
+  const supabase = createClient();
+
+  // Enrollment state
+  const [step, setStep] = useState<"idle" | "enrolling" | "verifying" | "unenrolling">("idle");
+  const [enrolled, setEnrolled] = useState<boolean | null>(null);
+  const [factorId, setFactorId] = useState("");
+  const [qrCode, setQrCode] = useState(""); // SVG string
+  const [secret, setSecret] = useState(""); // manual entry key
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "saved" | "error">("loading");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Load enrollment status on mount
+  useEffect(() => {
+    supabase.auth.mfa.listFactors().then(({ data }) => {
+      const hasTOTP = (data?.totp?.length ?? 0) > 0;
+      setEnrolled(hasTOTP);
+      if (hasTOTP) setFactorId(data!.totp[0].id);
+      setStatus("idle");
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function startEnroll() {
+    setStep("enrolling");
+    setErrorMsg("");
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      issuer: "YardPilot",
+    });
+    if (error || !data) {
+      setErrorMsg(error?.message ?? "Failed to start enrollment");
+      setStep("idle");
+      return;
+    }
+    setFactorId(data.id);
+    setQrCode(data.totp.qr_code);  // SVG string
+    setSecret(data.totp.secret);
+    setStep("verifying");
+  }
+
+  async function confirmEnroll(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    setErrorMsg("");
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
+      code: code.replace(/\s/g, ""),
+    });
+    if (error) {
+      setErrorMsg(error.message);
+      setStatus("idle");
+      return;
+    }
+    setEnrolled(true);
+    setStep("idle");
+    setCode("");
+    setStatus("saved");
+    setTimeout(() => setStatus("idle"), 3000);
+  }
+
+  async function unenroll() {
+    if (!confirm("Are you sure you want to remove two-factor authentication? This will make your account less secure.")) return;
+    setStep("unenrolling");
+    setErrorMsg("");
+    const { error } = await supabase.auth.mfa.unenroll({ factorId });
+    if (error) {
+      setErrorMsg(error.message);
+      setStep("idle");
+      return;
+    }
+    setEnrolled(false);
+    setFactorId("");
+    setStep("idle");
+    setStatus("saved");
+    setTimeout(() => setStatus("idle"), 3000);
+  }
+
+  if (status === "loading" && enrolled === null) {
+    return (
+      <SettingsCard title="Two-Factor Authentication" description="Loading…">
+        <p className="text-sm text-slate-400">Checking MFA status…</p>
+      </SettingsCard>
+    );
+  }
+
+  // ── Enrolled ──────────────────────────────────────────────────────────────
+  if (enrolled && step !== "verifying") {
+    return (
+      <SettingsCard
+        title="Two-Factor Authentication"
+        description="Your account is protected with an authenticator app."
+      >
+        <div className="flex items-start gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+            <svg className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-emerald-800">2FA is Active</p>
+            <p className="mt-1 text-xs text-emerald-700">
+              You will be asked for a verification code each time you sign in.
+            </p>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{errorMsg}</p>
+        )}
+        {status === "saved" && (
+          <p className="mt-4 text-sm text-emerald-600">✓ 2FA removed successfully.</p>
+        )}
+
+        <div className="mt-6 border-t border-slate-100 pt-4">
+          <button
+            onClick={unenroll}
+            disabled={step === "unenrolling"}
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+          >
+            {step === "unenrolling" ? "Removing…" : "Remove 2FA"}
+          </button>
+        </div>
+      </SettingsCard>
+    );
+  }
+
+  // ── QR Code / Verify enrollment ───────────────────────────────────────────
+  if (step === "verifying") {
+    return (
+      <SettingsCard
+        title="Set Up Authenticator App"
+        description="Scan the QR code with Google Authenticator, Authy, or any TOTP app."
+      >
+        <div className="space-y-5">
+          {/* QR code */}
+          <div className="flex justify-center">
+            <div
+              className="rounded-xl border border-slate-200 p-3"
+              dangerouslySetInnerHTML={{ __html: qrCode }}
+            />
+          </div>
+
+          {/* Manual entry key */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="mb-1 text-xs font-medium text-slate-500 uppercase tracking-wide">
+              Manual entry key
+            </p>
+            <p className="break-all font-mono text-sm text-slate-800">{secret}</p>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            After scanning, enter the 6-digit code your app shows to confirm setup.
+          </p>
+
+          <form onSubmit={confirmEnroll} className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Verification Code
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                maxLength={6}
+                placeholder="000000"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-2xl tracking-widest outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              />
+            </div>
+
+            {errorMsg && (
+              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                {errorMsg}
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setStep("idle"); setCode(""); setErrorMsg(""); }}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={status === "loading" || code.replace(/\s/g, "").length < 6}
+                className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+              >
+                {status === "loading" ? "Verifying…" : "Activate 2FA"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </SettingsCard>
+    );
+  }
+
+  // ── Not enrolled ──────────────────────────────────────────────────────────
+  return (
+    <SettingsCard
+      title="Two-Factor Authentication"
+      description="Add an extra layer of security to your account by requiring a code from your phone when you sign in."
+    >
+      <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
+          <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-amber-800">2FA is not enabled</p>
+          <p className="mt-1 text-xs text-amber-700">
+            We recommend enabling two-factor authentication to protect your business data.
+          </p>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{errorMsg}</p>
+      )}
+
+      <div className="mt-6">
+        <button
+          onClick={startEnroll}
+          disabled={step === "enrolling"}
+          className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+        >
+          {step === "enrolling" ? "Setting up…" : "Enable 2FA with Authenticator App"}
+        </button>
+      </div>
     </SettingsCard>
   );
 }

@@ -23,10 +23,20 @@ export default function LoginPage() {
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setErrorMessage(error.message);
+      return;
+    }
+
+    // Check if MFA step-up is required
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (
+      aalData?.nextLevel === "aal2" &&
+      aalData.nextLevel !== aalData.currentLevel
+    ) {
+      // User has TOTP enrolled — send to verify page
+      router.push("/mfa/verify");
       return;
     }
 
