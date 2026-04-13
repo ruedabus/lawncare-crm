@@ -1,0 +1,23 @@
+{
+  "name": "YardPilot CRM",
+  "short_name": "YardPilot",
+  "description": "Lawn care business management",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#1a5c2a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/YardPilot-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

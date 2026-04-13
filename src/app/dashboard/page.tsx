@@ -3,7 +3,9 @@ import {
   ClipboardDocumentListIcon,
   DocumentTextIcon,
   UsersIcon,
+  PlusCircleIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import { AppShell } from "../../components/layout/app-shell";
@@ -394,6 +396,19 @@ export default async function DashboardPage() {
   return (
     <AppShell title="Dashboard">
       <div className="space-y-6">
+
+        {/* ── Field Quick-Capture Banner (mobile-prominent) ── */}
+        <Link
+          href="/leads"
+          className="flex items-center justify-between rounded-2xl bg-emerald-600 px-5 py-4 shadow-sm transition hover:bg-emerald-700 active:scale-95"
+        >
+          <div>
+            <p className="text-sm font-semibold text-emerald-100">In the field?</p>
+            <p className="mt-0.5 text-lg font-bold text-white">Capture a New Lead</p>
+          </div>
+          <PlusCircleIcon className="h-10 w-10 shrink-0 text-white opacity-90" />
+        </Link>
+
         {/* Top metric cards */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
@@ -494,10 +509,11 @@ export default async function DashboardPage() {
           <div className="space-y-6">
             <PanelCard title="Quick Actions">
               <div className="grid gap-3">
-                <ActionButton label="Add Customer" />
-                <ActionButton label="Create Job" />
-                <ActionButton label="Create Invoice" />
-                <ActionButton label="View Schedule" />
+                <ActionLink href="/leads"     label="➕ Add Lead"       color="bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-200" />
+                <ActionLink href="/customers" label="👤 Add Customer"   color="bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-200" />
+                <ActionLink href="/jobs"      label="🗂️ Create Job"     color="bg-violet-50 text-violet-800 hover:bg-violet-100 border-violet-200" />
+                <ActionLink href="/invoices"  label="📄 Create Invoice" color="bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200" />
+                <ActionLink href="/schedule"  label="📅 View Schedule"  color="bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200" />
               </div>
             </PanelCard>
 
@@ -667,11 +683,14 @@ function PanelCard({
   );
 }
 
-function ActionButton({ label }: { label: string }) {
+function ActionLink({ href, label, color }: { href: string; label: string; color: string }) {
   return (
-    <button className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+    <Link
+      href={href}
+      className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition active:scale-95 ${color}`}
+    >
       {label}
-    </button>
+    </Link>
   );
 }
 

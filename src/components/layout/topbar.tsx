@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/server";
+import { MobileNav } from "./mobile-nav";
 
 type TopbarProps = {
   title: string;
@@ -23,19 +24,26 @@ export async function Topbar({ title }: TopbarProps) {
   const initial = userEmail.charAt(0).toUpperCase() || "U";
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950 px-6 py-4 text-white">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            YardPilot
-          </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-            {title}
-          </h2>
+    <header className="border-b border-slate-800 bg-slate-950 px-4 py-3 text-white sm:px-6 sm:py-4">
+      <div className="flex items-center justify-between gap-3">
+
+        {/* Left: hamburger (mobile) + title */}
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Mobile nav drawer */}
+          <MobileNav />
+
+          <div className="min-w-0">
+            <p className="hidden text-xs uppercase tracking-wide text-slate-400 sm:block">
+              YardPilot
+            </p>
+            <h2 className="truncate text-lg font-semibold tracking-tight sm:text-2xl">
+              {title}
+            </h2>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Business name — links to settings */}
+        {/* Right: business name + avatar */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <Link
             href="/settings"
             className="hidden rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white sm:block"
@@ -43,7 +51,6 @@ export async function Topbar({ title }: TopbarProps) {
             {businessName}
           </Link>
 
-          {/* User avatar — links to settings */}
           <Link
             href="/settings"
             className="flex items-center gap-2 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-500"
@@ -51,7 +58,9 @@ export async function Topbar({ title }: TopbarProps) {
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
               {initial}
             </div>
-            {userEmail ? userEmail.split("@")[0] : "Owner"}
+            <span className="hidden sm:inline">
+              {userEmail ? userEmail.split("@")[0] : "Owner"}
+            </span>
           </Link>
         </div>
       </div>
