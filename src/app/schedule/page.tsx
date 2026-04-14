@@ -123,7 +123,7 @@ export default async function SchedulePage() {
             </p>
             <Link
               href="/jobs"
-              className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md transition"
             >
               Go to Jobs
             </Link>
