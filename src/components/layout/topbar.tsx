@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/server";
 import { MobileNav } from "./mobile-nav";
+import { LogoutButton } from "@/components/logout-button";
 
 type TopbarProps = {
   title: string;
@@ -62,6 +63,8 @@ export async function Topbar({ title }: TopbarProps) {
               {userEmail ? userEmail.split("@")[0] : "Owner"}
             </span>
           </Link>
+		  
+		 <LogoutButton />  
         </div>
       </div>
     </header>
