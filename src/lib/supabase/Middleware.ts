@@ -1,16 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // ✅ PUBLIC ROUTES (DO NOT BLOCK THESE)
-  const publicRoutes = ["/login", "/auth/callback", "/set-password"];
-
-  if (publicRoutes.includes(pathname)) {
-    return NextResponse.next();
-  }
-
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request,
   });
@@ -40,12 +31,7 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data } = await supabase.auth.getUser();
-
-  // 🔒 PROTECT ALL OTHER ROUTES
-  if (!data.user) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  await supabase.auth.getUser();
 
   return response;
 }
