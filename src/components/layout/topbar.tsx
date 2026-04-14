@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/server";
 import { MobileNav } from "./mobile-nav";
-import { LogoutButton } from "@/components/logout-button";
+import { LogoutButton } from "../logout-button";
 
 type TopbarProps = {
   title: string;
