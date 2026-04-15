@@ -122,7 +122,11 @@ export default async function CustomerDetailsPage({
               )}
 
               <div className="mt-6 border-t border-neutral-100 pt-6">
-                <CreateJobForm customerId={customer.id} />
+                <CreateJobForm
+  customerId={customer.id}
+  customerName={customer.name}
+  serviceAddress={customer.address}
+/>
               </div>
             </div>
 
