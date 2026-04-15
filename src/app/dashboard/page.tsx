@@ -450,103 +450,97 @@ export default async function DashboardPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Business Overview
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Revenue and operations summary
-                </p>
+
+  {/* LEFT: Business Overview (NEW FULL VERSION) */}
+  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
+    <div className="flex items-start justify-between">
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900">
+          Business Overview
+        </h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Revenue and operations summary
+        </p>
+      </div>
+
+      <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+        This Month
+      </div>
+    </div>
+
+    {/* top mini stats */}
+    <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <MiniStat label="Revenue" value={`$${monthlyRevenue.toLocaleString()}`} />
+      <MiniStat label="Jobs" value={String(activeJobs ?? 0)} />
+      <MiniStat label="Unpaid" value={String(unpaidInvoices ?? 0)} />
+    </div>
+
+    {/* chart */}
+    <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-800">Revenue Trend</p>
+        <p className="text-xs text-slate-400">Last 6 months</p>
+      </div>
+
+      <div className="flex h-56 items-end gap-3">
+        {chartMonths.map((month) => {
+          const pct = Math.round((month.value / chartMax) * 100);
+          return (
+            <div key={month.label} className="flex flex-1 flex-col items-center gap-2">
+              <div className="flex h-40 w-full items-end">
+                <div
+                  className="w-full rounded-t-xl bg-emerald-500"
+                  style={{
+                    height: pct > 0 ? `${Math.max(pct, 8)}%` : "8px",
+                  }}
+                />
               </div>
-              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                This Month
-              </div>
+              <p className="text-xs text-slate-500">{month.label}</p>
             </div>
+          );
+        })}
+      </div>
+    </div>
 
-            <div className="mt-6">
-              {/* Bar chart */}
-              <div className="flex items-end gap-2 h-48">
-                {chartMonths.map((month) => {
-                  const pct = Math.round((month.value / chartMax) * 100);
-                  return (
-                    <div key={month.label} className="flex flex-1 flex-col items-center gap-1">
-                      <p className="text-xs font-semibold text-slate-700">
-                        {month.value > 0
-                          ? `$${month.value >= 1000
-                              ? `${(month.value / 1000).toFixed(1)}k`
-                              : month.value.toFixed(0)}`
-                          : ""}
-                      </p>
-                      <div className="w-full flex items-end" style={{ height: "140px" }}>
-                        <div
-                          className="w-full rounded-t-md bg-emerald-500 transition-all"
-                          style={{ height: pct > 0 ? `${Math.max(pct, 4)}%` : "4px", opacity: pct > 0 ? 1 : 0.25 }}
-                        />
-                      </div>
-                      <p className="text-xs text-slate-500">{month.label}</p>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Summary row */}
-              <div className="mt-4 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
-                <div>
-                  <p className="text-xs text-slate-500">This Month</p>
-                  <p className="text-sm font-bold text-slate-900">
-                    ${monthlyRevenue.toLocaleString("en-US", { minimumFractionDigits: 0 })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">6-Month Total</p>
-                  <p className="text-sm font-bold text-slate-900">
-                    ${chartMonths.reduce((s, m) => s + m.value, 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Monthly Avg</p>
-                  <p className="text-sm font-bold text-slate-900">
-                    ${Math.round(chartMonths.reduce((s, m) => s + m.value, 0) / 6).toLocaleString("en-US")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+    {/* bottom stats */}
+    <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <SummaryTile
+        label="6-Month Total"
+        value={`$${chartMonths.reduce((s, m) => s + m.value, 0).toLocaleString()}`}
+      />
+      <SummaryTile
+        label="Monthly Avg"
+        value={`$${Math.round(chartMonths.reduce((s, m) => s + m.value, 0) / 6).toLocaleString()}`}
+      />
+      <SummaryTile
+        label="Collection Rate"
+        value={`${paidPct}%`}
+      />
+    </div>
+  </div>
 
-          <div className="space-y-6">
-            <PanelCard title="Quick Actions">
-              <div className="grid gap-3">
-                <ActionLink href="/leads"     label="➕ Add Lead"       color="bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-200" />
-                <ActionLink href="/customers" label="👤 Add Customer"   color="bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-200" />
-                <ActionLink href="/jobs"      label="🗂️ Create Job"     color="bg-violet-50 text-violet-800 hover:bg-violet-100 border-violet-200" />
-                <ActionLink href="/invoices"  label="📄 Create Invoice" color="bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200" />
-                <ActionLink href="/schedule"  label="📅 View Schedule"  color="bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200" />
-              </div>
-            </PanelCard>
+  {/* RIGHT SIDE (KEEP SAME) */}
+  <div className="space-y-6">
+    <PanelCard title="Quick Actions">
+      <div className="grid gap-3">
+        <ActionLink href="/leads" label="➕ Add Lead" color="bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-200" />
+        <ActionLink href="/customers" label="👤 Add Customer" color="bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-200" />
+        <ActionLink href="/jobs" label="🗂️ Create Job" color="bg-violet-50 text-violet-800 hover:bg-violet-100 border-violet-200" />
+        <ActionLink href="/invoices" label="📄 Create Invoice" color="bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200" />
+      </div>
+    </PanelCard>
 
-            <PanelCard title="Today">
-              <div className="space-y-4">
-                <StatusRow
-                  label="Open Invoices"
-                  value={String(unpaidInvoices ?? 0)}
-                />
-                <StatusRow
-                  label="Active Jobs"
-                  value={String(activeJobs ?? 0)}
-                />
-                <StatusRow
-                  label="Scheduled Jobs"
-                  value={String(scheduledJobs ?? 0)}
-                />
-                <StatusRow
-                  label="Completed Today"
-                  value={String(completedToday ?? 0)}
-                />
-              </div>
-            </PanelCard>
-          </div>
-        </section>
+    <PanelCard title="Today">
+      <div className="space-y-4">
+        <StatusRow label="Open Invoices" value={String(unpaidInvoices ?? 0)} />
+        <StatusRow label="Active Jobs" value={String(activeJobs ?? 0)} />
+        <StatusRow label="Scheduled Jobs" value={String(scheduledJobs ?? 0)} />
+        <StatusRow label="Completed Today" value={String(completedToday ?? 0)} />
+      </div>
+    </PanelCard>
+  </div>
+
+</section>
 
         <section className="grid gap-6 lg:grid-cols-3">
           {/* Recent Activity */}
@@ -733,6 +727,34 @@ function ActivityItem({ text, time }: { text: string; time: string }) {
     <div className="flex items-start justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
       <p className="flex-1 leading-snug">{text}</p>
       <span className="shrink-0 text-xs text-slate-400">{time}</span>
+    </div>
+  );
+}
+function ActivityItem({ text, time }: { text: string; time: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
+      <p className="flex-1 leading-snug">{text}</p>
+      <span className="shrink-0 text-xs text-slate-400">{time}</span>
+    </div>
+  );
+}
+
+/* 👇 ADD IT RIGHT HERE 👇 */
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-2 text-xl font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="mt-2 text-lg font-bold text-slate-900">{value}</p>
     </div>
   );
 }
