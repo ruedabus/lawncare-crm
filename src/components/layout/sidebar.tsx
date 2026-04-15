@@ -36,18 +36,20 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
       <div className="border-b border-slate-200 px-5 py-4">
-        <div className="flex flex-col items-center gap-1">
-          <Image
-            src="/YardPilot-logo.png"
-            alt="YardPilot logo"
-            width={256}
-            height={96}
-            className="object-contain"
-            priority
-          />
-          <p className="text-lg font-extrabold tracking-widest uppercase" style={{ color: "#1a5c2a" }}>CRM</p>
-        </div>
-      </div>
+   <div className="flex flex-col items-start gap-0 px-2">
+  <Image
+    src="/YardPilot-logo.png"
+    alt="Yard Pilot logo"
+    width={300}
+    height={120}
+    className="object-contain"
+    priority
+  />
+
+  <p className="ml-2 -mt-2 text-sm font-extrabold tracking-widest uppercase text-slate-500">
+    CRM
+  </p>
+</div>
 
       <div className="flex-1 px-4 py-4">
         <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
