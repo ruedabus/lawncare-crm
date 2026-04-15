@@ -45,7 +45,7 @@ export function Sidebar() {
       className="object-contain"
       priority
     />
-    <p className="-mt-2 text-[13px] font-extrabold tracking-[0.25em] uppercase text-slate-500">
+    <p className="-mt-4 text-[16px] font-extrabold tracking-[0.25em] uppercase text-slate-500">
       CRM
     </p>
   </div>
