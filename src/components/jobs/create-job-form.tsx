@@ -102,26 +102,27 @@ export function CreateJobForm({
     }
   }
 
-  return (
-<div className="mb-5">
-  <h3 className="text-xl font-semibold text-slate-900">Add Job</h3>
-  <p className="mt-1 text-sm text-slate-500">
-    Schedule work for this customer and track progress.
-  </p>
-</div>
+return (
+  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="mb-5">
+      <h3 className="text-xl font-semibold text-slate-900">Add Job</h3>
+      <p className="mt-1 text-sm text-slate-500">
+        Schedule work for this customer and track progress.
+      </p>
+    </div>
 
-{customerName && (
-  <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-    <p className="text-sm font-medium text-slate-800">
-      Creating job for {customerName}
-    </p>
-    {serviceAddress && (
-      <p className="text-xs text-slate-500">{serviceAddress}</p>
+    {customerName && (
+      <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <p className="text-sm font-medium text-slate-800">
+          Creating job for {customerName}
+        </p>
+        {serviceAddress && (
+          <p className="text-xs text-slate-500">{serviceAddress}</p>
+        )}
+      </div>
     )}
-  </div>
-)}
 
-<form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Use a Template">
           <select
             value={selectedTemplate}
