@@ -411,34 +411,42 @@ export default async function DashboardPage() {
 
         {/* Top metric cards */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+           <Link href="/customers" className="block">
           <MetricCard
-            title="Customers"
-            value={totalCustomers ?? 0}
-            subtitle="Active customer records"
-            icon={<UsersIcon className="h-6 w-6" />}
-            color="bg-blue-600"
+           title="Customers"
+           value={totalCustomers ?? 0}
+           subtitle="Active customer records"
+           icon={<UsersIcon className="h-6 w-6" />}
+           color="bg-blue-600"
           />
-          <MetricCard
-            title="Jobs"
-            value={activeJobs ?? 0}
-            subtitle="Open or scheduled jobs"
-            icon={<ClipboardDocumentListIcon className="h-6 w-6" />}
-            color="bg-violet-600"
-          />
-          <MetricCard
-            title="Unpaid Invoices"
-            value={unpaidInvoices ?? 0}
-            subtitle="Invoices awaiting payment"
-            icon={<DocumentTextIcon className="h-6 w-6" />}
-            color="bg-amber-500"
-          />
-          <MetricCard
-            title="Monthly Revenue"
-            value={`$${monthlyRevenue.toLocaleString()}`}
-            subtitle="Current month (paid)"
-            icon={<BanknotesIcon className="h-6 w-6" />}
-            color="bg-emerald-600"
-          />
+        </Link>   
+        <Link href="/jobs" className="block">
+       <MetricCard
+          title="Jobs"
+          value={activeJobs ?? 0}
+          subtitle="Open or scheduled jobs"
+          icon={<ClipboardDocumentListIcon className="h-6 w-6" />}
+          color="bg-violet-600"
+         />
+       </Link>
+         <Link href="/invoices" className="block">
+         <MetricCard
+           title="Unpaid Invoices"
+           value={unpaidInvoices ?? 0}
+           subtitle="Invoices awaiting payment"
+           icon={<DocumentTextIcon className="h-6 w-6" />}
+           color="bg-amber-500"
+           />
+         </Link>
+         <Link href="/invoices" className="block">
+         <MetricCard
+           title="Monthly Revenue"
+           value={`$${monthlyRevenue.toLocaleString()}`}
+           subtitle="Current month (paid)"
+           icon={<BanknotesIcon className="h-6 w-6" />}
+           color="bg-emerald-600"
+           />
+         </Link>
         </section>
 
         <section className="grid gap-6 xl:grid-cols-3">
@@ -653,16 +661,12 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md">
-      
-      {/* subtle hover glow */}
+    <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition duration-200 hover:-translate-y-1 hover:shadow-lg">
       <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-transparent" />
       </div>
 
       <div className="flex items-center justify-between">
-        
-        {/* Left content */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             {title}
@@ -672,16 +676,18 @@ function MetricCard({
             {value}
           </p>
 
+          <p className="mt-1 text-xs font-medium text-emerald-600">
+            Tracking this month
+          </p>
+
           <p className="mt-1 text-xs text-slate-500">
             {subtitle}
           </p>
         </div>
 
-        {/* Right icon */}
         <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm ${color}`}>
           {icon}
         </div>
-
       </div>
     </div>
   );
