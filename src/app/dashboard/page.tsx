@@ -730,14 +730,6 @@ function ActivityItem({ text, time }: { text: string; time: string }) {
     </div>
   );
 }
-function ActivityItem({ text, time }: { text: string; time: string }) {
-  return (
-    <div className="flex items-start justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
-      <p className="flex-1 leading-snug">{text}</p>
-      <span className="shrink-0 text-xs text-slate-400">{time}</span>
-    </div>
-  );
-}
 
 /* 👇 ADD IT RIGHT HERE 👇 */
 
