@@ -469,27 +469,28 @@ export default async function DashboardPage() {
     </div>
 
     {/* top mini stats */}
-    <div className="mt-6 grid gap-4 md:grid-cols-3">
+    <div className="mt-6 border-t border-slate-100 pt-6">
+	 <div className="grid gap-4 md:grid-cols-3">
       <MiniStat label="Revenue" value={`$${monthlyRevenue.toLocaleString()}`} />
       <MiniStat label="Jobs" value={String(activeJobs ?? 0)} />
       <MiniStat label="Unpaid" value={String(unpaidInvoices ?? 0)} />
     </div>
 
     {/* chart */}
-    <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+    <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-800">Revenue Trend</p>
         <p className="text-xs text-slate-400">Last 6 months</p>
       </div>
 
-      <div className="flex h-56 items-end gap-3">
+      <div className="mt-6 h-48 flex items-end gap-3">
         {chartMonths.map((month) => {
           const pct = Math.round((month.value / chartMax) * 100);
           return (
             <div key={month.label} className="flex flex-1 flex-col items-center gap-2">
               <div className="flex h-40 w-full items-end">
                 <div
-                  className="w-full rounded-t-xl bg-emerald-500"
+                  className="w-full rounded-t-xl bg-emerald-500 transition-all duration-700 ease-out"
                   style={{
                     height: pct > 0 ? `${Math.max(pct, 8)}%` : "8px",
                   }}
@@ -512,7 +513,7 @@ export default async function DashboardPage() {
         label="Monthly Avg"
         value={`$${Math.round(chartMonths.reduce((s, m) => s + m.value, 0) / 6).toLocaleString()}`}
       />
-      <SummaryTile
+         <SummaryTile
         label="Collection Rate"
         value={`${paidPct}%`}
       />
@@ -527,6 +528,7 @@ export default async function DashboardPage() {
         <ActionLink href="/customers" label="👤 Add Customer" color="bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-200" />
         <ActionLink href="/jobs" label="🗂️ Create Job" color="bg-violet-50 text-violet-800 hover:bg-violet-100 border-violet-200" />
         <ActionLink href="/invoices" label="📄 Create Invoice" color="bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200" />
+		<ActionLink href="/schedule" label="📅 View Schedule" color="bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200" />
       </div>
     </PanelCard>
 
@@ -735,8 +737,10 @@ function ActivityItem({ text, time }: { text: string; time: string }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs text-slate-500">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+  {label}
+</p>
       <p className="mt-2 text-xl font-bold text-slate-900">{value}</p>
     </div>
   );
@@ -744,7 +748,7 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
       <p className="text-xs text-slate-400">{label}</p>
       <p className="mt-2 text-lg font-bold text-slate-900">{value}</p>
     </div>
