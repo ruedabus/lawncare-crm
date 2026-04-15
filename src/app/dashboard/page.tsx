@@ -450,8 +450,6 @@ export default async function DashboardPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-3">
-
-  {/* LEFT: Business Overview (NEW FULL VERSION) */}
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
     <div className="flex items-start justify-between">
       <div>
@@ -468,15 +466,12 @@ export default async function DashboardPage() {
       </div>
     </div>
 
-    {/* top mini stats */}
-    <div className="mt-6 border-t border-slate-100 pt-6">
-	 <div className="grid gap-4 md:grid-cols-3">
+    <div className="mt-6 grid gap-4 md:grid-cols-3">
       <MiniStat label="Revenue" value={`$${monthlyRevenue.toLocaleString()}`} />
       <MiniStat label="Jobs" value={String(activeJobs ?? 0)} />
       <MiniStat label="Unpaid" value={String(unpaidInvoices ?? 0)} />
     </div>
 
-    {/* chart */}
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-800">Revenue Trend</p>
@@ -503,24 +498,24 @@ export default async function DashboardPage() {
       </div>
     </div>
 
-    {/* bottom stats */}
-    <div className="mt-6 grid gap-4 md:grid-cols-3">
-      <SummaryTile
-        label="6-Month Total"
-        value={`$${chartMonths.reduce((s, m) => s + m.value, 0).toLocaleString()}`}
-      />
-      <SummaryTile
-        label="Monthly Avg"
-        value={`$${Math.round(chartMonths.reduce((s, m) => s + m.value, 0) / 6).toLocaleString()}`}
-      />
-         <SummaryTile
-        label="Collection Rate"
-        value={`${paidPct}%`}
-      />
+    <div className="mt-6 border-t border-slate-100 pt-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <SummaryTile
+          label="6-Month Total"
+          value={`$${chartMonths.reduce((s, m) => s + m.value, 0).toLocaleString()}`}
+        />
+        <SummaryTile
+          label="Monthly Avg"
+          value={`$${Math.round(chartMonths.reduce((s, m) => s + m.value, 0) / 6).toLocaleString()}`}
+        />
+        <SummaryTile
+          label="Collection Rate"
+          value={`${paidPct}%`}
+        />
+      </div>
     </div>
   </div>
 
-  {/* RIGHT SIDE (KEEP SAME) */}
   <div className="space-y-6">
     <PanelCard title="Quick Actions">
       <div className="grid gap-3">
@@ -528,7 +523,7 @@ export default async function DashboardPage() {
         <ActionLink href="/customers" label="👤 Add Customer" color="bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-200" />
         <ActionLink href="/jobs" label="🗂️ Create Job" color="bg-violet-50 text-violet-800 hover:bg-violet-100 border-violet-200" />
         <ActionLink href="/invoices" label="📄 Create Invoice" color="bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200" />
-		<ActionLink href="/schedule" label="📅 View Schedule" color="bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200" />
+        <ActionLink href="/schedule" label="📅 View Schedule" color="bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200" />
       </div>
     </PanelCard>
 
@@ -541,7 +536,6 @@ export default async function DashboardPage() {
       </div>
     </PanelCard>
   </div>
-
 </section>
 
         <section className="grid gap-6 lg:grid-cols-3">
