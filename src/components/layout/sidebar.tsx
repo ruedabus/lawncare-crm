@@ -49,7 +49,8 @@ export function Sidebar() {
   <p className="ml-2 -mt-2 text-sm font-extrabold tracking-widest uppercase text-slate-500">
     CRM
   </p>
-</div>
+   </div>
+ </div>
 
       <div className="flex-1 px-4 py-4">
         <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
