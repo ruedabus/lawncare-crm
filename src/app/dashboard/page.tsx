@@ -653,16 +653,35 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-      <div className="flex">
-        <div className={`flex items-center justify-center px-5 text-white ${color}`}>
+    <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md">
+      
+      {/* subtle hover glow */}
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-transparent" />
+      </div>
+
+      <div className="flex items-center justify-between">
+        
+        {/* Left content */}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {title}
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-slate-900">
+            {value}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500">
+            {subtitle}
+          </p>
+        </div>
+
+        {/* Right icon */}
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm ${color}`}>
           {icon}
         </div>
-        <div className="flex-1 p-5">
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
-          <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
-        </div>
+
       </div>
     </div>
   );
