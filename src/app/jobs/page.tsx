@@ -15,19 +15,31 @@ export default async function JobsPage() {
     redirect("/login");
   }
 
-  // Fetch all jobs and customers in parallel
-  const [{ data: jobs }, { data: customers }] = await Promise.all([
+  const [
+    { data: jobs, error: jobsError },
+    { data: customers, error: customersError },
+    { data: technicians, error: techniciansError },
+  ] = await Promise.all([
     supabase
       .from("jobs")
       .select("*, customers(id, name)")
       .order("created_at", { ascending: false }),
+
     supabase
       .from("customers")
       .select("id, name")
       .order("name", { ascending: true }),
+
+    supabase
+      .from("technicians")
+      .select("id, name, color, is_active")
+      .order("name", { ascending: true }),
   ]);
 
-  // Flatten the customer join onto each job row
+  // 🔍 Debug logs (check your terminal)
+  console.log("TECHNICIANS ERROR:", techniciansError);
+  console.log("TECHNICIANS DATA:", technicians);
+
   const jobList = (jobs ?? []).map((job) => ({
     id: job.id,
     title: job.title,
@@ -44,7 +56,12 @@ export default async function JobsPage() {
     name: c.name,
   }));
 
-  // Summary counts
+  const technicianList = (technicians ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    color: t.color,
+  }));
+
   const total = jobList.length;
   const scheduled = jobList.filter((j) => j.status === "scheduled").length;
   const inProgress = jobList.filter((j) => j.status === "in_progress").length;
@@ -53,7 +70,7 @@ export default async function JobsPage() {
   return (
     <AppShell title="Jobs">
       <div className="space-y-6">
-        {/* Summary cards */}
+        {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Jobs" value={total} color="bg-slate-700" />
           <StatCard label="Scheduled" value={scheduled} color="bg-slate-500" />
@@ -71,14 +88,15 @@ export default async function JobsPage() {
 
         {/* Main layout */}
         <div className="grid gap-6 xl:grid-cols-3">
-          {/* Job list — takes 2/3 width */}
           <div className="xl:col-span-2">
             <JobsList jobs={jobList} />
           </div>
 
-          {/* Create form — takes 1/3 width */}
           <div>
-            <CreateJobFormGlobal customers={customerList} />
+            <CreateJobFormGlobal
+              customers={customerList}
+              technicians={technicianList}
+            />
           </div>
         </div>
       </div>

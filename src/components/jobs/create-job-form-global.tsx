@@ -8,23 +8,42 @@ type Customer = {
   name: string | null;
 };
 
+type Technician = {
+  id: string;
+  name: string;
+  color?: string | null;
+};
+
 type CreateJobFormGlobalProps = {
   customers: Customer[];
+  technicians: Technician[];
 };
 
 type FormErrors = {
   customerId: string;
   title: string;
   serviceDate: string;
+  scheduledStart: string;
+  scheduledEnd: string;
 };
 
-export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
-  const [customerId, setCustomerId] = useState("");
+export function CreateJobFormGlobal({
+  customers,
+  technicians,
+}: CreateJobFormGlobalProps) {
+  console.log("TECHS IN FORM:", technicians);	
+  console.log("TECHNICIANS:", technicians);	
   const router = useRouter();
+
+  const [customerId, setCustomerId] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [showCustomerResults, setShowCustomerResults] = useState(false);
+
+  const [technicianId, setTechnicianId] = useState("");
   const [title, setTitle] = useState("");
   const [serviceDate, setServiceDate] = useState("");
+  const [scheduledStart, setScheduledStart] = useState("");
+  const [scheduledEnd, setScheduledEnd] = useState("");
   const [status, setStatus] = useState("scheduled");
   const [notes, setNotes] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
@@ -36,6 +55,8 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
     customerId: "",
     title: "",
     serviceDate: "",
+    scheduledStart: "",
+    scheduledEnd: "",
   });
 
   const normalizedCustomers = useMemo(
@@ -63,11 +84,15 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
     customerId: string;
     title: string;
     serviceDate: string;
+    scheduledStart: string;
+    scheduledEnd: string;
   }): FormErrors {
     const newErrors: FormErrors = {
       customerId: "",
       title: "",
       serviceDate: "",
+      scheduledStart: "",
+      scheduledEnd: "",
     };
 
     if (!values.customerId) {
@@ -85,13 +110,43 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
       }
     }
 
+    if (values.scheduledStart && Number.isNaN(new Date(values.scheduledStart).getTime())) {
+      newErrors.scheduledStart = "Please enter a valid start time.";
+    }
+
+    if (values.scheduledEnd && Number.isNaN(new Date(values.scheduledEnd).getTime())) {
+      newErrors.scheduledEnd = "Please enter a valid end time.";
+    }
+
+    if (values.scheduledStart && values.scheduledEnd) {
+      const start = new Date(values.scheduledStart);
+      const end = new Date(values.scheduledEnd);
+
+      if (end <= start) {
+        newErrors.scheduledEnd = "End time must be after start time.";
+      }
+    }
+
     return newErrors;
   }
 
   const isFormValid = useMemo(() => {
-    const nextErrors = validateForm({ customerId, title, serviceDate });
-    return !nextErrors.customerId && !nextErrors.title && !nextErrors.serviceDate;
-  }, [customerId, title, serviceDate]);
+    const nextErrors = validateForm({
+      customerId,
+      title,
+      serviceDate,
+      scheduledStart,
+      scheduledEnd,
+    });
+
+    return (
+      !nextErrors.customerId &&
+      !nextErrors.title &&
+      !nextErrors.serviceDate &&
+      !nextErrors.scheduledStart &&
+      !nextErrors.scheduledEnd
+    );
+  }, [customerId, title, serviceDate, scheduledStart, scheduledEnd]);
 
   function handleCustomerSelect(selectedId: string, selectedName: string) {
     setCustomerId(selectedId);
@@ -109,8 +164,11 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
     setCustomerId("");
     setCustomerSearch("");
     setShowCustomerResults(false);
+    setTechnicianId("");
     setTitle("");
     setServiceDate("");
+    setScheduledStart("");
+    setScheduledEnd("");
     setStatus("scheduled");
     setNotes("");
     setIsRecurring(false);
@@ -119,6 +177,8 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
       customerId: "",
       title: "",
       serviceDate: "",
+      scheduledStart: "",
+      scheduledEnd: "",
     });
     setErrorMessage("");
     setSuccessMessage("");
@@ -127,12 +187,25 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    const newErrors = validateForm({ customerId, title, serviceDate });
+    const newErrors = validateForm({
+      customerId,
+      title,
+      serviceDate,
+      scheduledStart,
+      scheduledEnd,
+    });
+
     setErrors(newErrors);
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (newErrors.customerId || newErrors.title || newErrors.serviceDate) {
+    if (
+      newErrors.customerId ||
+      newErrors.title ||
+      newErrors.serviceDate ||
+      newErrors.scheduledStart ||
+      newErrors.scheduledEnd
+    ) {
       return;
     }
 
@@ -144,10 +217,13 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer_id: customerId,
+          technician_id: technicianId || null,
           title: title.trim(),
           service_date: serviceDate || null,
+          scheduled_start: scheduledStart || null,
+          scheduled_end: scheduledEnd || null,
           status,
-          notes: notes.trim(),
+          notes: notes.trim() || null,
           is_recurring: isRecurring,
           recurrence_weeks: isRecurring ? recurrenceWeeks : null,
         }),
@@ -218,7 +294,7 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
               autoComplete="off"
             />
 
-            {showCustomerResults && (
+            {showCustomerResults ? (
               <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
@@ -239,12 +315,27 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {errors.customerId ? (
             <p className="mt-1 text-sm text-red-600">{errors.customerId}</p>
           ) : null}
+        </Field>
+
+        <Field label="Technician">
+          <select
+            value={technicianId}
+            onChange={(e) => setTechnicianId(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+          >
+            <option value="">Unassigned</option>
+            {technicians.map((tech) => (
+              <option key={tech.id} value={tech.id}>
+                {tech.name}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field label="Job Title">
@@ -257,7 +348,13 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
               setTitle(value);
               setErrors((prev) => ({
                 ...prev,
-                ...validateForm({ customerId, title: value, serviceDate }),
+                ...validateForm({
+                  customerId,
+                  title: value,
+                  serviceDate,
+                  scheduledStart,
+                  scheduledEnd,
+                }),
               }));
               setErrorMessage("");
               setSuccessMessage("");
@@ -286,7 +383,13 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
                 setServiceDate(value);
                 setErrors((prev) => ({
                   ...prev,
-                  ...validateForm({ customerId, title, serviceDate: value }),
+                  ...validateForm({
+                    customerId,
+                    title,
+                    serviceDate: value,
+                    scheduledStart,
+                    scheduledEnd,
+                  }),
                 }));
                 setErrorMessage("");
                 setSuccessMessage("");
@@ -313,6 +416,70 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Scheduled Start">
+            <input
+              type="datetime-local"
+              value={scheduledStart}
+              onChange={(e) => {
+                const value = e.target.value;
+                setScheduledStart(value);
+                setErrors((prev) => ({
+                  ...prev,
+                  ...validateForm({
+                    customerId,
+                    title,
+                    serviceDate,
+                    scheduledStart: value,
+                    scheduledEnd,
+                  }),
+                }));
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+              className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+                errors.scheduledStart
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+              }`}
+            />
+            {errors.scheduledStart ? (
+              <p className="mt-1 text-sm text-red-600">{errors.scheduledStart}</p>
+            ) : null}
+          </Field>
+
+          <Field label="Scheduled End">
+            <input
+              type="datetime-local"
+              value={scheduledEnd}
+              onChange={(e) => {
+                const value = e.target.value;
+                setScheduledEnd(value);
+                setErrors((prev) => ({
+                  ...prev,
+                  ...validateForm({
+                    customerId,
+                    title,
+                    serviceDate,
+                    scheduledStart,
+                    scheduledEnd: value,
+                  }),
+                }));
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+              className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+                errors.scheduledEnd
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+              }`}
+            />
+            {errors.scheduledEnd ? (
+              <p className="mt-1 text-sm text-red-600">{errors.scheduledEnd}</p>
+            ) : null}
           </Field>
         </div>
 

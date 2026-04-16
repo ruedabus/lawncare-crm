@@ -30,22 +30,40 @@ export default async function CustomerDetailsPage({
     notFound();
   }
 
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("*")
-    .eq("customer_id", id)
-    .order("created_at", { ascending: false });
+  const [{ data: jobs }, { data: invoices }, { data: technicians }] =
+    await Promise.all([
+      supabase
+        .from("jobs")
+        .select("*")
+        .eq("customer_id", id)
+        .order("created_at", { ascending: false }),
 
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("*")
-    .eq("customer_id", id)
-    .order("created_at", { ascending: false });
+      supabase
+        .from("invoices")
+        .select("*")
+        .eq("customer_id", id)
+        .order("created_at", { ascending: false }),
+
+      supabase
+        .from("technicians")
+        .select("id, name, color")
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+    ]);
 
   const jobList = jobs ?? [];
   const invoiceList = invoices ?? [];
 
-  const jobOptions = jobList.map((job) => ({ id: job.id, title: job.title }));
+  const jobOptions = jobList.map((job) => ({
+    id: job.id,
+    title: job.title,
+  }));
+
+  const technicianList = (technicians ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    color: t.color,
+  }));
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -76,7 +94,6 @@ export default async function CustomerDetailsPage({
 
         <div className="grid gap-6 lg:grid-cols-3">
           <section className="space-y-6 lg:col-span-2">
-            {/* Jobs */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900">
                 Jobs
@@ -96,17 +113,20 @@ export default async function CustomerDetailsPage({
                           <h3 className="text-base font-semibold text-neutral-900">
                             {job.title || "Untitled Job"}
                           </h3>
+
                           {job.notes ? (
                             <p className="mt-1 text-sm text-neutral-600">
                               {job.notes}
                             </p>
                           ) : null}
+
                           {job.service_date ? (
                             <p className="mt-1 text-xs text-neutral-500">
                               Service date:{" "}
                               {new Date(job.service_date).toLocaleDateString()}
                             </p>
                           ) : null}
+
                           {job.status ? (
                             <p className="mt-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
                               {job.status}
@@ -123,14 +143,14 @@ export default async function CustomerDetailsPage({
 
               <div className="mt-6 border-t border-neutral-100 pt-6">
                 <CreateJobForm
-  customerId={customer.id}
-  customerName={customer.name}
-  serviceAddress={customer.address}
-/>
+                  customerId={customer.id}
+                  customerName={customer.name}
+                  serviceAddress={customer.address}
+                  technicians={technicianList}
+                />
               </div>
             </div>
 
-            {/* Invoices */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900">
                 Invoices
@@ -155,6 +175,7 @@ export default async function CustomerDetailsPage({
                             {invoice.status ? (
                               <p>Status: {invoice.status}</p>
                             ) : null}
+
                             {invoice.amount != null ? (
                               <p>
                                 Amount: $
@@ -163,12 +184,11 @@ export default async function CustomerDetailsPage({
                                   : invoice.amount}
                               </p>
                             ) : null}
+
                             {invoice.due_date ? (
                               <p>
                                 Due:{" "}
-                                {new Date(
-                                  invoice.due_date
-                                ).toLocaleDateString()}
+                                {new Date(invoice.due_date).toLocaleDateString()}
                               </p>
                             ) : null}
                           </div>
@@ -191,22 +211,21 @@ export default async function CustomerDetailsPage({
           </section>
 
           <aside className="space-y-6">
-            <EditCustomerForm customer={{
-              id: customer.id,
-              name: customer.name,
-              email: customer.email,
-              phone: customer.phone,
-              address: customer.address,
-            }} />
+            <EditCustomerForm
+              customer={{
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+                address: customer.address,
+              }}
+            />
 
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900">
                 Create Invoice
               </h2>
-              <CreateInvoiceForm
-                customerId={customer.id}
-                jobs={jobOptions}
-              />
+              <CreateInvoiceForm customerId={customer.id} jobs={jobOptions} />
             </div>
 
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">

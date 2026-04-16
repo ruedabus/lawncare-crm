@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import clsx from "clsx";
+import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import {
   HomeIcon,
   UsersIcon,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/estimates", label: "Estimates", icon: CalculatorIcon },
   { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon },
   { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon },
+  { href: "/technicians", label: "Technicians", icon: WrenchScrewdriverIcon },
   { href: "/invoices", label: "Invoices", icon: DocumentTextIcon },
   { href: "/tasks", label: "Tasks", icon: CheckCircleIcon },
   { href: "/reports", label: "Reports", icon: ChartBarIcon },

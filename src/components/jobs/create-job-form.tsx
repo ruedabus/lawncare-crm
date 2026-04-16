@@ -1,11 +1,19 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+
+type Technician = {
+  id: string;
+  name: string;
+  color?: string | null;
+};
 
 type CreateJobFormProps = {
   customerId: string;
   customerName?: string;
   serviceAddress?: string;
+  technicians: Technician[];
 };
 
 const JOB_TEMPLATES = [
@@ -38,16 +46,24 @@ const JOB_TEMPLATES = [
 type FormErrors = {
   title: string;
   serviceDate: string;
+  scheduledStart: string;
+  scheduledEnd: string;
 };
 
 export function CreateJobForm({
   customerId,
   customerName,
   serviceAddress,
+  technicians,
 }: CreateJobFormProps) {
+  const router = useRouter();
+
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
   const [title, setTitle] = useState("");
   const [serviceDate, setServiceDate] = useState("");
+  const [scheduledStart, setScheduledStart] = useState("");
+  const [scheduledEnd, setScheduledEnd] = useState("");
   const [status, setStatus] = useState("scheduled");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -56,6 +72,8 @@ export function CreateJobForm({
   const [errors, setErrors] = useState<FormErrors>({
     title: "",
     serviceDate: "",
+    scheduledStart: "",
+    scheduledEnd: "",
   });
 
   function applyTemplate(templateId: string) {
@@ -66,7 +84,6 @@ export function CreateJobForm({
 
     setTitle(template.title);
     setNotes(template.notes);
-
     setErrors((prev) => ({
       ...prev,
       title: "",
@@ -75,10 +92,17 @@ export function CreateJobForm({
     setSuccessMessage("");
   }
 
-  function validateForm(values: { title: string; serviceDate: string }): FormErrors {
+  function validateForm(values: {
+    title: string;
+    serviceDate: string;
+    scheduledStart: string;
+    scheduledEnd: string;
+  }): FormErrors {
     const newErrors: FormErrors = {
       title: "",
       serviceDate: "",
+      scheduledStart: "",
+      scheduledEnd: "",
     };
 
     if (!values.title.trim()) {
@@ -86,9 +110,26 @@ export function CreateJobForm({
     }
 
     if (values.serviceDate) {
-      const selected = new Date(`${values.serviceDate}T00:00:00`);
-      if (Number.isNaN(selected.getTime())) {
+      const parsed = new Date(`${values.serviceDate}T00:00:00`);
+      if (Number.isNaN(parsed.getTime())) {
         newErrors.serviceDate = "Please enter a valid service date.";
+      }
+    }
+
+    if (values.scheduledStart && Number.isNaN(new Date(values.scheduledStart).getTime())) {
+      newErrors.scheduledStart = "Please enter a valid start time.";
+    }
+
+    if (values.scheduledEnd && Number.isNaN(new Date(values.scheduledEnd).getTime())) {
+      newErrors.scheduledEnd = "Please enter a valid end time.";
+    }
+
+    if (values.scheduledStart && values.scheduledEnd) {
+      const start = new Date(values.scheduledStart);
+      const end = new Date(values.scheduledEnd);
+
+      if (end <= start) {
+        newErrors.scheduledEnd = "End time must be after start time.";
       }
     }
 
@@ -96,19 +137,35 @@ export function CreateJobForm({
   }
 
   const isFormValid = useMemo(() => {
-    const nextErrors = validateForm({ title, serviceDate });
-    return !nextErrors.title && !nextErrors.serviceDate;
-  }, [title, serviceDate]);
+    const nextErrors = validateForm({
+      title,
+      serviceDate,
+      scheduledStart,
+      scheduledEnd,
+    });
+
+    return (
+      !nextErrors.title &&
+      !nextErrors.serviceDate &&
+      !nextErrors.scheduledStart &&
+      !nextErrors.scheduledEnd
+    );
+  }, [title, serviceDate, scheduledStart, scheduledEnd]);
 
   function handleCancel() {
     setSelectedTemplate("");
+    setTechnicianId("");
     setTitle("");
     setServiceDate("");
+    setScheduledStart("");
+    setScheduledEnd("");
     setStatus("scheduled");
     setNotes("");
     setErrors({
       title: "",
       serviceDate: "",
+      scheduledStart: "",
+      scheduledEnd: "",
     });
     setErrorMessage("");
     setSuccessMessage("");
@@ -117,12 +174,23 @@ export function CreateJobForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    const newErrors = validateForm({ title, serviceDate });
+    const newErrors = validateForm({
+      title,
+      serviceDate,
+      scheduledStart,
+      scheduledEnd,
+    });
+
     setErrors(newErrors);
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (newErrors.title || newErrors.serviceDate) {
+    if (
+      newErrors.title ||
+      newErrors.serviceDate ||
+      newErrors.scheduledStart ||
+      newErrors.scheduledEnd
+    ) {
       return;
     }
 
@@ -136,10 +204,13 @@ export function CreateJobForm({
         },
         body: JSON.stringify({
           customer_id: customerId,
+          technician_id: technicianId || null,
           title: title.trim(),
           service_date: serviceDate || null,
+          scheduled_start: scheduledStart || null,
+          scheduled_end: scheduledEnd || null,
           status,
-          notes: notes.trim(),
+          notes: notes.trim() || null,
         }),
       });
 
@@ -152,7 +223,7 @@ export function CreateJobForm({
 
       setSuccessMessage("Job created successfully.");
       handleCancel();
-      window.location.reload();
+      router.refresh();
     } catch {
       setErrorMessage("Unable to create job.");
     } finally {
@@ -171,7 +242,7 @@ export function CreateJobForm({
         </p>
       </div>
 
-      {customerName && (
+      {customerName ? (
         <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-sm font-semibold text-slate-800">
             Creating job for {customerName}
@@ -180,7 +251,7 @@ export function CreateJobForm({
             <p className="mt-1 text-xs text-slate-500">{serviceAddress}</p>
           ) : null}
         </div>
-      )}
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <Field label="Use a Template">
@@ -198,6 +269,21 @@ export function CreateJobForm({
           </select>
         </Field>
 
+        <Field label="Technician">
+          <select
+            value={technicianId}
+            onChange={(e) => setTechnicianId(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+          >
+            <option value="">Unassigned</option>
+            {technicians.map((tech) => (
+              <option key={tech.id} value={tech.id}>
+                {tech.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <Field label="Job Title">
           <input
             type="text"
@@ -208,7 +294,12 @@ export function CreateJobForm({
               setTitle(value);
               setErrors((prev) => ({
                 ...prev,
-                ...validateForm({ title: value, serviceDate }),
+                ...validateForm({
+                  title: value,
+                  serviceDate,
+                  scheduledStart,
+                  scheduledEnd,
+                }),
               }));
               setErrorMessage("");
               setSuccessMessage("");
@@ -237,7 +328,12 @@ export function CreateJobForm({
                 setServiceDate(value);
                 setErrors((prev) => ({
                   ...prev,
-                  ...validateForm({ title, serviceDate: value }),
+                  ...validateForm({
+                    title,
+                    serviceDate: value,
+                    scheduledStart,
+                    scheduledEnd,
+                  }),
                 }));
                 setErrorMessage("");
                 setSuccessMessage("");
@@ -264,6 +360,68 @@ export function CreateJobForm({
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Scheduled Start">
+            <input
+              type="datetime-local"
+              value={scheduledStart}
+              onChange={(e) => {
+                const value = e.target.value;
+                setScheduledStart(value);
+                setErrors((prev) => ({
+                  ...prev,
+                  ...validateForm({
+                    title,
+                    serviceDate,
+                    scheduledStart: value,
+                    scheduledEnd,
+                  }),
+                }));
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+              className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+                errors.scheduledStart
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+              }`}
+            />
+            {errors.scheduledStart ? (
+              <p className="mt-1 text-sm text-red-600">{errors.scheduledStart}</p>
+            ) : null}
+          </Field>
+
+          <Field label="Scheduled End">
+            <input
+              type="datetime-local"
+              value={scheduledEnd}
+              onChange={(e) => {
+                const value = e.target.value;
+                setScheduledEnd(value);
+                setErrors((prev) => ({
+                  ...prev,
+                  ...validateForm({
+                    title,
+                    serviceDate,
+                    scheduledStart,
+                    scheduledEnd: value,
+                  }),
+                }));
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+              className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+                errors.scheduledEnd
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+              }`}
+            />
+            {errors.scheduledEnd ? (
+              <p className="mt-1 text-sm text-red-600">{errors.scheduledEnd}</p>
+            ) : null}
           </Field>
         </div>
 

@@ -14,7 +14,6 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const supabase = await createClient();
 
-    // Fetch the existing job first (needed for recurring logic + validation)
     const { data: existingJob, error: fetchError } = await supabase
       .from("jobs")
       .select("*")
@@ -25,24 +24,80 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Job not found." }, { status: 404 });
     }
 
-    // Build partial update — only include fields that were sent
     const updates: Record<string, unknown> = {};
 
     if (body.title !== undefined) {
       if (!body.title.trim()) {
-        return NextResponse.json({ error: "Job title is required." }, { status: 400 });
+        return NextResponse.json(
+          { error: "Job title is required." },
+          { status: 400 }
+        );
       }
       updates.title = body.title.trim();
     }
 
-    if (body.service_date !== undefined) updates.service_date = body.service_date || null;
-    if (body.status !== undefined) updates.status = body.status;
-    if (body.notes !== undefined) updates.notes = body.notes?.trim() || null;
-    if (body.is_recurring !== undefined) updates.is_recurring = body.is_recurring;
+    if (body.service_date !== undefined) {
+      updates.service_date = body.service_date || null;
+    }
+
+    if (body.status !== undefined) {
+      updates.status = body.status;
+    }
+
+    if (body.notes !== undefined) {
+      updates.notes = body.notes?.trim() || null;
+    }
+
+    if (body.technician_id !== undefined) {
+      updates.technician_id = body.technician_id || null;
+    }
+
+    if (body.scheduled_start !== undefined) {
+      updates.scheduled_start = body.scheduled_start || null;
+    }
+
+    if (body.scheduled_end !== undefined) {
+      updates.scheduled_end = body.scheduled_end || null;
+    }
+
+    const nextScheduledStart =
+      body.scheduled_start !== undefined
+        ? body.scheduled_start
+        : existingJob.scheduled_start;
+
+    const nextScheduledEnd =
+      body.scheduled_end !== undefined
+        ? body.scheduled_end
+        : existingJob.scheduled_end;
+
+    if (nextScheduledStart && nextScheduledEnd) {
+      const start = new Date(nextScheduledStart);
+      const end = new Date(nextScheduledEnd);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid scheduled start or end time." },
+          { status: 400 }
+        );
+      }
+
+      if (end <= start) {
+        return NextResponse.json(
+          { error: "End time must be after start time." },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.is_recurring !== undefined) {
+      updates.is_recurring = body.is_recurring;
+    }
+
     if (body.recurrence_weeks !== undefined) {
-      updates.recurrence_weeks = body.is_recurring ?? existingJob.is_recurring
-        ? (body.recurrence_weeks ?? 1)
-        : null;
+      updates.recurrence_weeks =
+        body.is_recurring ?? existingJob.is_recurring
+          ? body.recurrence_weeks ?? 1
+          : null;
     }
 
     const { data, error } = await supabase
@@ -56,7 +111,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Auto-create the next recurring job when this one is marked completed
     const wasNotCompleted = existingJob.status !== "completed";
     const isNowCompleted = body.status === "completed";
     const jobIsRecurring = data.is_recurring ?? existingJob.is_recurring;
@@ -72,16 +126,41 @@ export async function PATCH(request: Request, context: RouteContext) {
         nextDate = d.toISOString().split("T")[0];
       }
 
-      await supabase.from("jobs").insert([{
-        user_id: existingJob.user_id ?? null,
-        customer_id: existingJob.customer_id,
-        title: existingJob.title,
-        service_date: nextDate,
-        status: "scheduled",
-        notes: existingJob.notes ?? null,
-        is_recurring: true,
-        recurrence_weeks: weeks,
-      }]);
+      let nextScheduledStart: string | null = null;
+      let nextScheduledEnd: string | null = null;
+
+      const currentScheduledStart =
+        data.scheduled_start ?? existingJob.scheduled_start;
+      const currentScheduledEnd =
+        data.scheduled_end ?? existingJob.scheduled_end;
+
+      if (currentScheduledStart) {
+        const start = new Date(currentScheduledStart);
+        start.setDate(start.getDate() + weeks * 7);
+        nextScheduledStart = start.toISOString();
+      }
+
+      if (currentScheduledEnd) {
+        const end = new Date(currentScheduledEnd);
+        end.setDate(end.getDate() + weeks * 7);
+        nextScheduledEnd = end.toISOString();
+      }
+
+      await supabase.from("jobs").insert([
+        {
+          user_id: existingJob.user_id ?? null,
+          customer_id: existingJob.customer_id,
+          technician_id: existingJob.technician_id ?? null,
+          title: existingJob.title,
+          service_date: nextDate,
+          scheduled_start: nextScheduledStart,
+          scheduled_end: nextScheduledEnd,
+          status: "scheduled",
+          notes: existingJob.notes ?? null,
+          is_recurring: true,
+          recurrence_weeks: weeks,
+        },
+      ]);
     }
 
     return NextResponse.json({ job: data }, { status: 200 });

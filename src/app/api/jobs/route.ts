@@ -4,7 +4,18 @@ import { createClient } from "../../../lib/supabase/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { customer_id, title, service_date, status, notes, is_recurring, recurrence_weeks } = body;
+    const {
+      customer_id,
+      technician_id,
+      title,
+      service_date,
+      scheduled_start,
+      scheduled_end,
+      status,
+      notes,
+      is_recurring,
+      recurrence_weeks,
+    } = body;
 
     if (!customer_id || !title || !title.trim()) {
       return NextResponse.json(
@@ -13,22 +24,51 @@ export async function POST(request: Request) {
       );
     }
 
+    if (scheduled_start && scheduled_end) {
+      const start = new Date(scheduled_start);
+      const end = new Date(scheduled_end);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid scheduled start or end time." },
+          { status: 400 }
+        );
+      }
+
+      if (end <= start) {
+        return NextResponse.json(
+          { error: "End time must be after start time." },
+          { status: 400 }
+        );
+      }
+    }
+
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { data, error } = await supabase
       .from("jobs")
-      .insert([{
-        user_id: user.id,
-        customer_id,
-        title: title.trim(),
-        service_date: service_date || null,
-        status: status || "scheduled",
-        notes: notes?.trim() || null,
-        is_recurring: is_recurring ?? false,
-        recurrence_weeks: is_recurring ? (recurrence_weeks ?? 1) : null,
-      }])
+      .insert([
+        {
+          user_id: user.id,
+          customer_id,
+          technician_id: technician_id || null,
+          title: title.trim(),
+          service_date: service_date || null,
+          scheduled_start: scheduled_start || null,
+          scheduled_end: scheduled_end || null,
+          status: status || "scheduled",
+          notes: notes?.trim() || null,
+          is_recurring: is_recurring ?? false,
+          recurrence_weeks: is_recurring ? (recurrence_weeks ?? 1) : null,
+        },
+      ])
       .select()
       .single();
 

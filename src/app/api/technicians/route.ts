@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import { createClient } from "../../../lib/supabase/server";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { name, email, phone, color } = body;
+
+    if (!name || !name.trim()) {
+      return NextResponse.json(
+        { error: "Technician name is required." },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data, error } = await supabase
+      .from("technicians")
+      .insert([
+        {
+          user_id: user.id,
+          name: name.trim(),
+          email: email?.trim() || null,
+          phone: phone?.trim() || null,
+          color: color || "#2563eb",
+          is_active: true,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ technician: data }, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to create technician." },
+      { status: 500 }
+    );
+  }
+}
