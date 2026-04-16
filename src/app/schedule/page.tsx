@@ -69,18 +69,19 @@ export default async function SchedulePage() {
         .order("name", { ascending: true }),
     ]);
 
-  const scheduleJobs = (jobs ?? []).map((job) => ({
-    id: job.id,
-    title: job.title,
-    status: job.status,
-    notes: job.notes,
-    scheduledStart: job.scheduled_start,
-    scheduledEnd: job.scheduled_end,
-    technicianId: job.technician_id,
-    customerId: job.customer_id,
-    customerName:
-      (job.customers as { name: string | null } | null)?.name ?? "Unknown",
-  }));
+ const scheduleJobs = (jobs ?? []).map((job) => ({
+  id: job.id,
+  title: job.title,
+  status: job.status,
+  notes: job.notes,
+  scheduledStart: job.scheduled_start,
+  scheduledEnd: job.scheduled_end,
+  technicianId: job.technician_id,
+  customerId: job.customer_id,
+  customerName: Array.isArray(job.customers)
+    ? job.customers[0]?.name ?? "Unknown"
+    : "Unknown",
+}));
 
   const techs = (technicians ?? []).map((tech) => ({
     id: tech.id,
