@@ -3,11 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 
-export function CustomersList({ customers }) {
+type Customer = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
+type CustomersListProps = {
+  customers: Customer[];
+};
+
+export function CustomersList({ customers }: CustomersListProps) {
   const [search, setSearch] = useState("");
 
   const filteredCustomers = customers.filter((customer) => {
-    const text = `${customer.name} ${customer.email ?? ""} ${customer.phone ?? ""} ${customer.address ?? ""}`.toLowerCase();
+    const text =
+      `${customer.name} ${customer.email ?? ""} ${customer.phone ?? ""} ${customer.address ?? ""}`.toLowerCase();
+
     return text.includes(search.toLowerCase());
   });
 
@@ -15,7 +29,6 @@ export function CustomersList({ customers }) {
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
       <h2 className="mb-4 text-lg font-semibold">Customer List</h2>
 
-      {/* SEARCH BAR */}
       <input
         type="text"
         placeholder="Search customers..."
@@ -41,8 +54,7 @@ export function CustomersList({ customers }) {
               </Link>
 
               <p className="text-sm text-slate-500">
-                {customer.email || "No email"} •{" "}
-                {customer.phone || "No phone"}
+                {customer.email || "No email"} • {customer.phone || "No phone"}
               </p>
 
               <p className="mt-1 text-sm text-slate-500">
