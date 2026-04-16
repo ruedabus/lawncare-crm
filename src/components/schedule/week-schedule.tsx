@@ -27,10 +27,24 @@ type ScheduleJob = {
   customerName: string;
 };
 
+type ScheduleTask = {
+  id: string;
+  title: string;
+  status: string;
+  notes: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  technicianId: string | null;
+  dueDate: string | null;
+  type: "task";
+};
+
 type WeekScheduleProps = {
   technicians: Technician[];
   jobs: ScheduleJob[];
+  tasks: ScheduleTask[];
   customers: Customer[];
+  selectedDate: string;
 };
 
 type CreateJobErrors = {
@@ -40,7 +54,7 @@ type CreateJobErrors = {
   scheduledEnd: string;
 };
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOURS = Array.from({ length: 16 }, (_, i) => i + 5); // 5 AM → 8 PM
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
@@ -53,7 +67,9 @@ function startOfWeek(date: Date) {
 
 function formatHour(hour: number) {
   const suffix = hour >= 12 ? "PM" : "AM";
-  const display = hour > 12 ? hour - 12 : hour;
+  const normalized = hour % 24;
+  const display =
+    normalized === 0 ? 12 : normalized > 12 ? normalized - 12 : normalized;
   return `${display}:00 ${suffix}`;
 }
 
@@ -72,12 +88,26 @@ function toDateTimeLocal(date: Date) {
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function toDateParam(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}`;
+}
+
 export function WeekSchedule({
   technicians,
   jobs,
+  tasks,
   customers,
+  selectedDate,
 }: WeekScheduleProps) {
   const router = useRouter();
+
+  const parsedSelectedDate = useMemo(() => {
+    const parsed = new Date(selectedDate);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  }, [selectedDate]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,26 +129,86 @@ export function WeekSchedule({
     scheduledEnd: "",
   });
 
+  const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [movingJobId, setMovingJobId] = useState<string | null>(null);
+
   const weekDays = useMemo(() => {
-    const start = startOfWeek(new Date());
+    const start = startOfWeek(parsedSelectedDate);
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       return d;
     });
-  }, []);
+  }, [parsedSelectedDate]);
 
-  const upcoming = jobs.length;
+  const weekLabel = useMemo(() => {
+    const start = weekDays[0];
+    const end = weekDays[6];
 
-  const scheduledToday = jobs.filter((job) => {
-    if (!job.scheduledStart) return false;
-    return sameDay(new Date(job.scheduledStart), new Date());
-  }).length;
+    if (!start || !end) return "";
 
-  const pastJobs = jobs.filter((job) => {
-    if (!job.scheduledEnd) return false;
-    return new Date(job.scheduledEnd) < new Date();
-  }).length;
+    const sameMonth = start.getMonth() === end.getMonth();
+    const sameYear = start.getFullYear() === end.getFullYear();
+
+    if (sameMonth && sameYear) {
+      return `${start.toLocaleDateString(undefined, {
+        month: "long",
+      })} ${start.getDate()}–${end.getDate()}, ${start.getFullYear()}`;
+    }
+
+    return `${start.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })} – ${end.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+  }, [weekDays]);
+
+  const upcoming = jobs.length + tasks.length;
+
+  const scheduledToday =
+    jobs.filter((job) => {
+      if (!job.scheduledStart) return false;
+      return sameDay(new Date(job.scheduledStart), new Date());
+    }).length +
+    tasks.filter((task) => {
+      if (!task.scheduledStart) return false;
+      return sameDay(new Date(task.scheduledStart), new Date());
+    }).length;
+
+  const pastItems =
+    jobs.filter((job) => {
+      if (!job.scheduledEnd) return false;
+      return new Date(job.scheduledEnd) < new Date();
+    }).length +
+    tasks.filter((task) => {
+      if (!task.scheduledEnd) return false;
+      return new Date(task.scheduledEnd) < new Date();
+    }).length;
+
+  function navigateToDate(date: Date) {
+    router.push(`/schedule?date=${toDateParam(date)}`);
+  }
+
+  function goToPreviousWeek() {
+    const next = new Date(parsedSelectedDate);
+    next.setDate(next.getDate() - 7);
+    navigateToDate(next);
+  }
+
+  function goToNextWeek() {
+    const next = new Date(parsedSelectedDate);
+    next.setDate(next.getDate() + 7);
+    navigateToDate(next);
+  }
+
+  function goToToday() {
+    navigateToDate(new Date());
+  }
 
   function getTechnicianColor(technicianId: string | null) {
     return (
@@ -127,7 +217,10 @@ export function WeekSchedule({
   }
 
   function getTechnicianName(technicianId: string | null) {
-    return technicians.find((tech) => tech.id === technicianId)?.name || "Unassigned";
+    return (
+      technicians.find((tech) => tech.id === technicianId)?.name ||
+      "Unassigned"
+    );
   }
 
   function openCreateModal(technicianId: string, day: Date, hour: number) {
@@ -276,26 +369,118 @@ export function WeekSchedule({
     }
   }
 
+  async function moveJobToSlot(
+    jobId: string,
+    technicianId: string,
+    day: Date,
+    hour: number
+  ) {
+    const job = jobs.find((item) => item.id === jobId);
+    if (!job?.scheduledStart || !job?.scheduledEnd) return;
+
+    setMovingJobId(jobId);
+    setErrorMessage("");
+
+    try {
+      const oldStart = new Date(job.scheduledStart);
+      const oldEnd = new Date(job.scheduledEnd);
+      const durationMs = oldEnd.getTime() - oldStart.getTime();
+
+      const newStart = new Date(day);
+      newStart.setHours(hour, oldStart.getMinutes(), 0, 0);
+
+      const newEnd = new Date(newStart.getTime() + durationMs);
+
+      const response = await fetch(`/api/jobs/${jobId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          technician_id: technicianId,
+          scheduled_start: newStart.toISOString(),
+          scheduled_end: newEnd.toISOString(),
+          service_date: newStart.toISOString().split("T")[0],
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(result.error || "Failed to move job.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setErrorMessage("Unable to move job.");
+    } finally {
+      setMovingJobId(null);
+      setDraggingJobId(null);
+      setDropTarget(null);
+    }
+  }
+
   return (
     <>
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="Upcoming Jobs" value={upcoming} color="bg-blue-600" />
+          <StatCard label="Upcoming Items" value={upcoming} color="bg-blue-600" />
           <StatCard
             label="Scheduled Today"
             value={scheduledToday}
             color="bg-emerald-600"
           />
-          <StatCard label="Past Jobs" value={pastJobs} color="bg-slate-400" />
+          <StatCard label="Past Items" value={pastItems} color="bg-slate-400" />
         </div>
+
+        {errorMessage ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Weekly Technician Schedule
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Click an empty slot to schedule a job for that technician.
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Weekly Technician Schedule
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Jobs and scheduled tasks for the selected week.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToPreviousWeek}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  ← Prev
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToToday}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Today
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToNextWeek}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-3 text-sm font-medium text-slate-700">
+              {weekLabel}
             </p>
           </div>
 
@@ -352,6 +537,8 @@ export function WeekSchedule({
                       </div>
 
                       {weekDays.map((day) => {
+                        const slotKey = `${tech.id}-${day.toISOString()}-${hour}`;
+
                         const slotJobs = jobs.filter((job) => {
                           if (!job.scheduledStart) return false;
                           if (job.technicianId !== tech.id) return false;
@@ -360,51 +547,142 @@ export function WeekSchedule({
                           return sameDay(start, day) && start.getHours() === hour;
                         });
 
+                        const slotTasks = tasks.filter((task) => {
+                          if (!task.scheduledStart) return false;
+                          if (task.technicianId !== tech.id) return false;
+
+                          const start = new Date(task.scheduledStart);
+                          return sameDay(start, day) && start.getHours() === hour;
+                        });
+
+                        const isDropTarget = dropTarget === slotKey;
+
                         return (
                           <div
-                            key={`${tech.id}-${day.toISOString()}-${hour}`}
-                            className="min-h-[84px] border-r border-t border-slate-100 p-2 last:border-r-0"
+                            key={slotKey}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setDropTarget(slotKey);
+                            }}
+                            onDragLeave={() => {
+                              if (dropTarget === slotKey) {
+                                setDropTarget(null);
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const jobId = e.dataTransfer.getData("text/plain");
+                              if (jobId) {
+                                void moveJobToSlot(jobId, tech.id, day, hour);
+                              }
+                            }}
+                            className={`min-h-[84px] border-r border-t border-slate-100 p-2 last:border-r-0 ${
+                              isDropTarget ? "bg-blue-50/60" : ""
+                            }`}
                           >
-                            {slotJobs.length === 0 ? (
+                            {slotJobs.length === 0 && slotTasks.length === 0 ? (
                               <button
                                 type="button"
                                 onClick={() => openCreateModal(tech.id, day, hour)}
-                                className="flex h-full min-h-[68px] w-full items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs text-slate-400 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600"
+                                className={`flex h-full min-h-[68px] w-full items-center justify-center rounded-xl border text-xs transition ${
+                                  isDropTarget
+                                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                                    : "border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600"
+                                }`}
                               >
-                                + Add job
+                                {isDropTarget ? "Drop here" : "+ Add job"}
                               </button>
                             ) : (
                               <div className="space-y-2">
                                 {slotJobs.map((job) => (
-                                  <Link
+                                  <div
                                     key={job.id}
-                                    href={`/customers/${job.customerId}`}
-                                    className="block rounded-xl border p-3 transition hover:opacity-95"
+                                    draggable={movingJobId !== job.id}
+                                    onDragStart={(e) => {
+                                      e.dataTransfer.setData("text/plain", job.id);
+                                      e.dataTransfer.effectAllowed = "move";
+                                      setDraggingJobId(job.id);
+                                    }}
+                                    onDragEnd={() => {
+                                      setDraggingJobId(null);
+                                      setDropTarget(null);
+                                    }}
+                                    className={`rounded-xl border p-3 transition ${
+                                      draggingJobId === job.id ? "opacity-50" : ""
+                                    } ${movingJobId === job.id ? "pointer-events-none opacity-60" : ""}`}
                                     style={{
                                       borderColor: `${getTechnicianColor(job.technicianId)}40`,
                                       backgroundColor: `${getTechnicianColor(job.technicianId)}15`,
+                                      cursor: movingJobId === job.id ? "wait" : "grab",
                                     }}
+                                  >
+                                    <Link
+                                      href={`/customers/${job.customerId}`}
+                                      className="block"
+                                      draggable={false}
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="truncate text-sm font-semibold text-slate-900">
+                                          {job.title}
+                                        </p>
+                                        <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] text-slate-700">
+                                          {job.status}
+                                        </span>
+                                      </div>
+
+                                      <p className="mt-1 text-xs font-medium text-slate-700">
+                                        {job.customerName}
+                                      </p>
+
+                                      <p className="mt-1 text-[11px] text-slate-500">
+                                        {getTechnicianName(job.technicianId)}
+                                      </p>
+
+                                      {job.notes ? (
+                                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                                          {job.notes}
+                                        </p>
+                                      ) : null}
+                                    </Link>
+                                  </div>
+                                ))}
+
+                                {slotTasks.map((task) => (
+                                  <Link
+                                    key={task.id}
+                                    href="/tasks"
+                                    className="block rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 transition hover:bg-amber-100"
                                   >
                                     <div className="flex items-center justify-between gap-2">
                                       <p className="truncate text-sm font-semibold text-slate-900">
-                                        {job.title}
+                                        {task.title}
                                       </p>
-                                      <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] text-slate-700">
-                                        {job.status}
+                                      <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] text-amber-700">
+                                        Task
                                       </span>
                                     </div>
 
-                                    <p className="mt-1 text-xs font-medium text-slate-700">
-                                      {job.customerName}
-                                    </p>
-
                                     <p className="mt-1 text-[11px] text-slate-500">
-                                      {getTechnicianName(job.technicianId)}
+                                      {getTechnicianName(task.technicianId)}
                                     </p>
 
-                                    {job.notes ? (
+                                    {task.scheduledStart && task.scheduledEnd ? (
+                                      <p className="mt-1 text-[11px] text-slate-500">
+                                        {new Date(task.scheduledStart).toLocaleTimeString([], {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                        })}{" "}
+                                        –{" "}
+                                        {new Date(task.scheduledEnd).toLocaleTimeString([], {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                        })}
+                                      </p>
+                                    ) : null}
+
+                                    {task.notes ? (
                                       <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                                        {job.notes}
+                                        {task.notes}
                                       </p>
                                     ) : null}
                                   </Link>

@@ -18,7 +18,15 @@ function endOfWeek(date: Date) {
   return d;
 }
 
-export default async function SchedulePage() {
+type SchedulePageProps = {
+  searchParams?: Promise<{
+    date?: string;
+  }>;
+};
+
+export default async function SchedulePage({
+  searchParams,
+}: SchedulePageProps) {
   const supabase = await createClient();
 
   const {
@@ -29,16 +37,27 @@ export default async function SchedulePage() {
     redirect("/login");
   }
 
-  const now = new Date();
-  const weekStart = startOfWeek(now);
-  const weekEnd = endOfWeek(now);
+  const params = await searchParams;
+  const selectedDate = params?.date
+    ? new Date(`${params.date}T12:00:00`)
+    : new Date();
 
-  const [{ data: jobs }, { data: technicians }, { data: customers }] =
-    await Promise.all([
-      supabase
-        .from("jobs")
-        .select(
-          `
+  const baseDate =
+    Number.isNaN(selectedDate.getTime()) ? new Date() : selectedDate;
+
+  const weekStart = startOfWeek(baseDate);
+  const weekEnd = endOfWeek(baseDate);
+
+  const [
+    { data: jobs },
+    { data: technicians },
+    { data: customers },
+    { data: tasks },
+  ] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select(
+        `
           id,
           title,
           status,
@@ -49,39 +68,71 @@ export default async function SchedulePage() {
           customer_id,
           customers(name)
         `
-        )
-        .eq("user_id", user.id)
-        .gte("scheduled_start", weekStart.toISOString())
-        .lt("scheduled_start", weekEnd.toISOString())
-        .order("scheduled_start", { ascending: true }),
+      )
+      .eq("user_id", user.id)
+      .gte("scheduled_start", weekStart.toISOString())
+      .lt("scheduled_start", weekEnd.toISOString())
+      .order("scheduled_start", { ascending: true }),
 
-      supabase
-        .from("technicians")
-        .select("id, name, color, is_active")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .order("name", { ascending: true }),
+    supabase
+      .from("technicians")
+      .select("id, name, color, is_active")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
 
-      supabase
-        .from("customers")
-        .select("id, name")
-        .eq("user_id", user.id)
-        .order("name", { ascending: true }),
-    ]);
+    supabase
+      .from("customers")
+      .select("id, name")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true }),
 
- const scheduleJobs = (jobs ?? []).map((job) => ({
-  id: job.id,
-  title: job.title,
-  status: job.status,
-  notes: job.notes,
-  scheduledStart: job.scheduled_start,
-  scheduledEnd: job.scheduled_end,
-  technicianId: job.technician_id,
-  customerId: job.customer_id,
-  customerName: Array.isArray(job.customers)
-    ? job.customers[0]?.name ?? "Unknown"
-    : "Unknown",
-}));
+    supabase
+      .from("tasks")
+      .select(
+        `
+          id,
+          title,
+          notes,
+          status,
+          due_date,
+          scheduled_start,
+          scheduled_end,
+          assigned_to
+        `
+      )
+      .eq("user_id", user.id)
+      .not("scheduled_start", "is", null)
+      .gte("scheduled_start", weekStart.toISOString())
+      .lt("scheduled_start", weekEnd.toISOString())
+      .order("scheduled_start", { ascending: true }),
+  ]);
+
+  const scheduleJobs = (jobs ?? []).map((job) => ({
+    id: job.id,
+    title: job.title,
+    status: job.status,
+    notes: job.notes,
+    scheduledStart: job.scheduled_start,
+    scheduledEnd: job.scheduled_end,
+    technicianId: job.technician_id,
+    customerId: job.customer_id,
+    customerName: Array.isArray(job.customers)
+      ? job.customers[0]?.name ?? "Unknown"
+      : "Unknown",
+  }));
+
+  const scheduleTasks = (tasks ?? []).map((task) => ({
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    notes: task.notes,
+    scheduledStart: task.scheduled_start,
+    scheduledEnd: task.scheduled_end,
+    technicianId: task.assigned_to,
+    dueDate: task.due_date,
+    type: "task" as const,
+  }));
 
   const techs = (technicians ?? []).map((tech) => ({
     id: tech.id,
@@ -99,7 +150,9 @@ export default async function SchedulePage() {
       <WeekSchedule
         technicians={techs}
         jobs={scheduleJobs}
+        tasks={scheduleTasks}
         customers={customerList}
+        selectedDate={baseDate.toISOString()}
       />
     </AppShell>
   );

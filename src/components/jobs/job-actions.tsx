@@ -9,6 +9,8 @@ type Job = {
   service_date: string | null;
   status: string;
   notes: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
 };
 
 type JobActionsProps = {
@@ -37,6 +39,24 @@ const QUICK_STATUS_STYLES: Record<string, string> = {
   cancelled:
     "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
 };
+
+function buildShiftedDateTime(
+  originalIso: string | null | undefined,
+  nextServiceDate: string | null
+) {
+  if (!originalIso || !nextServiceDate) return null;
+
+  const original = new Date(originalIso);
+  if (Number.isNaN(original.getTime())) return null;
+
+  const [year, month, day] = nextServiceDate.split("-").map(Number);
+  if (!year || !month || !day) return null;
+
+  const shifted = new Date(original);
+  shifted.setFullYear(year, month - 1, day);
+
+  return shifted.toISOString();
+}
 
 export function JobActions({ job }: JobActionsProps) {
   const [loading, setLoading] = useState(false);
@@ -67,7 +87,7 @@ export function JobActions({ job }: JobActionsProps) {
     }
 
     if (values.serviceDate) {
-      const parsed = new Date(`${values.serviceDate}T00:00:00`);
+      const parsed = new Date(`${values.serviceDate}T12:00:00`);
       if (Number.isNaN(parsed.getTime())) {
         newErrors.serviceDate = "Please enter a valid service date.";
       }
@@ -106,6 +126,8 @@ export function JobActions({ job }: JobActionsProps) {
           service_date: job.service_date,
           status: newStatus,
           notes: job.notes,
+          scheduled_start: job.scheduled_start ?? null,
+          scheduled_end: job.scheduled_end ?? null,
         }),
       });
 
@@ -138,6 +160,18 @@ export function JobActions({ job }: JobActionsProps) {
     setLoading(true);
 
     try {
+      const nextServiceDate = serviceDate || null;
+
+      const nextScheduledStart = buildShiftedDateTime(
+        job.scheduled_start,
+        nextServiceDate
+      );
+
+      const nextScheduledEnd = buildShiftedDateTime(
+        job.scheduled_end,
+        nextServiceDate
+      );
+
       const response = await fetch(`/api/jobs/${job.id}`, {
         method: "PATCH",
         headers: {
@@ -145,9 +179,11 @@ export function JobActions({ job }: JobActionsProps) {
         },
         body: JSON.stringify({
           title: title.trim(),
-          service_date: serviceDate || null,
+          service_date: nextServiceDate,
           status,
           notes: notes.trim() || null,
+          scheduled_start: nextScheduledStart,
+          scheduled_end: nextScheduledEnd,
         }),
       });
 
@@ -159,7 +195,7 @@ export function JobActions({ job }: JobActionsProps) {
       }
 
       setIsEditing(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       setErrorMessage("Unable to update job.");
     } finally {
@@ -189,7 +225,7 @@ export function JobActions({ job }: JobActionsProps) {
         return;
       }
 
-      window.location.reload();
+      router.refresh();
     } catch {
       setErrorMessage("Unable to delete job.");
     } finally {

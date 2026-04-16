@@ -13,10 +13,20 @@ export default async function TasksPage() {
 
   if (!user) redirect("/login");
 
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data: tasks }, { data: technicians }] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("technicians")
+      .select("id, name, color, is_active")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+  ]);
 
   const taskList = (tasks ?? []).map((t) => ({
     id: t.id,
@@ -24,6 +34,15 @@ export default async function TasksPage() {
     notes: t.notes,
     due_date: t.due_date,
     status: t.status,
+    assigned_to: t.assigned_to,
+    scheduled_start: t.scheduled_start,
+    scheduled_end: t.scheduled_end,
+  }));
+
+  const technicianList = (technicians ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    color: t.color,
   }));
 
   const todo = taskList.filter((t) => t.status === "todo").length;
@@ -33,20 +52,18 @@ export default async function TasksPage() {
   return (
     <AppShell title="Tasks">
       <div className="space-y-6">
-        {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard label="To Do" value={todo} color="bg-slate-500" />
           <StatCard label="In Progress" value={inProgress} color="bg-blue-600" />
           <StatCard label="Done" value={done} color="bg-emerald-600" />
         </div>
 
-        {/* Main layout */}
         <div className="grid gap-6 xl:grid-cols-3">
           <div className="xl:col-span-2">
             <TasksList tasks={taskList} />
           </div>
           <div>
-            <CreateTaskForm />
+            <CreateTaskForm technicians={technicianList} />
           </div>
         </div>
       </div>

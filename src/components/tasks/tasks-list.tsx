@@ -33,6 +33,22 @@ const STATUS_LABELS: Record<string, string> = {
   done: "Done",
 };
 
+function formatDueDate(value: string | null) {
+  if (!value) return "No due date";
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return value;
+
+  const localDate = new Date(year, month - 1, day);
+
+  return localDate.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function TasksList({ tasks: initial }: TasksListProps) {
   const [tasks, setTasks] = useState(initial);
   const [activeTab, setActiveTab] = useState("all");
@@ -169,13 +185,9 @@ export function TasksList({ tasks: initial }: TasksListProps) {
                   {task.notes ? <span>{task.notes}</span> : null}
                   {task.due_date ? (
                     <span>
-                      Due{" "}
-                      {new Date(task.due_date).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
+  Due{" "}
+  {formatDueDate(task.due_date)}
+</span>
                   ) : null}
                 </div>
               </div>

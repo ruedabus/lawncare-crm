@@ -22,21 +22,35 @@ export default async function JobsPage() {
   ] = await Promise.all([
     supabase
       .from("jobs")
-      .select("*, customers(id, name)")
+      .select(`
+        id,
+        title,
+        status,
+        service_date,
+        notes,
+        customer_id,
+        scheduled_start,
+        scheduled_end,
+        customers(id, name)
+      `)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
 
     supabase
       .from("customers")
       .select("id, name")
+      .eq("user_id", user.id)
       .order("name", { ascending: true }),
 
     supabase
       .from("technicians")
       .select("id, name, color, is_active")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
       .order("name", { ascending: true }),
   ]);
 
-  // 🔍 Debug logs (check your terminal)
+  // Debug logs (optional)
   console.log("TECHNICIANS ERROR:", techniciansError);
   console.log("TECHNICIANS DATA:", technicians);
 
@@ -49,6 +63,8 @@ export default async function JobsPage() {
     customer_id: job.customer_id,
     customer_name:
       (job.customers as { name: string | null } | null)?.name ?? null,
+    scheduled_start: job.scheduled_start,
+    scheduled_end: job.scheduled_end,
   }));
 
   const customerList = (customers ?? []).map((c) => ({

@@ -12,6 +12,8 @@ type Job = {
   notes: string | null;
   customer_id: string;
   customer_name: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
 };
 
 type JobsListProps = {
@@ -78,6 +80,20 @@ export function JobsList({ jobs }: JobsListProps) {
       return text.includes(term);
     });
   }, [jobs, activeTab, search]);
+  
+  function formatServiceDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return value;
+
+  const localDate = new Date(year, month - 1, day);
+
+  return localDate.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -193,19 +209,10 @@ export function JobsList({ jobs }: JobsListProps) {
                     )}
 
                     {job.service_date ? (
-                      <span>
-                        {new Date(job.service_date).toLocaleDateString(
-                          undefined,
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          }
-                        )}
-                      </span>
-                    ) : (
-                      <span>No service date</span>
-                    )}
+  <span>{formatServiceDate(job.service_date)}</span>
+) : (
+  <span>No service date</span>
+)}
                   </div>
 
                   {job.notes ? (
