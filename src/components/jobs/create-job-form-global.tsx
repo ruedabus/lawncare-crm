@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Customer = {
   id: string;
@@ -11,8 +12,17 @@ type CreateJobFormGlobalProps = {
   customers: Customer[];
 };
 
+type FormErrors = {
+  customerId: string;
+  title: string;
+  serviceDate: string;
+};
+
 export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
   const [customerId, setCustomerId] = useState("");
+  const router = useRouter();
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showCustomerResults, setShowCustomerResults] = useState(false);
   const [title, setTitle] = useState("");
   const [serviceDate, setServiceDate] = useState("");
   const [status, setStatus] = useState("scheduled");
@@ -22,12 +32,111 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({
+    customerId: "",
+    title: "",
+    serviceDate: "",
+  });
+
+  const normalizedCustomers = useMemo(
+    () =>
+      customers.map((customer) => ({
+        id: customer.id,
+        name: customer.name?.trim() || "Unnamed",
+      })),
+    [customers]
+  );
+
+  const selectedCustomer = normalizedCustomers.find((c) => c.id === customerId);
+
+  const filteredCustomers = useMemo(() => {
+    const term = customerSearch.trim().toLowerCase();
+
+    if (!term) return normalizedCustomers.slice(0, 8);
+
+    return normalizedCustomers
+      .filter((customer) => customer.name.toLowerCase().includes(term))
+      .slice(0, 8);
+  }, [normalizedCustomers, customerSearch]);
+
+  function validateForm(values: {
+    customerId: string;
+    title: string;
+    serviceDate: string;
+  }): FormErrors {
+    const newErrors: FormErrors = {
+      customerId: "",
+      title: "",
+      serviceDate: "",
+    };
+
+    if (!values.customerId) {
+      newErrors.customerId = "Please select a customer.";
+    }
+
+    if (!values.title.trim()) {
+      newErrors.title = "Job title is required.";
+    }
+
+    if (values.serviceDate) {
+      const parsed = new Date(`${values.serviceDate}T00:00:00`);
+      if (Number.isNaN(parsed.getTime())) {
+        newErrors.serviceDate = "Please enter a valid service date.";
+      }
+    }
+
+    return newErrors;
+  }
+
+  const isFormValid = useMemo(() => {
+    const nextErrors = validateForm({ customerId, title, serviceDate });
+    return !nextErrors.customerId && !nextErrors.title && !nextErrors.serviceDate;
+  }, [customerId, title, serviceDate]);
+
+  function handleCustomerSelect(selectedId: string, selectedName: string) {
+    setCustomerId(selectedId);
+    setCustomerSearch(selectedName);
+    setShowCustomerResults(false);
+    setErrors((prev) => ({
+      ...prev,
+      customerId: "",
+    }));
+    setErrorMessage("");
+    setSuccessMessage("");
+  }
+
+  function handleCancel() {
+    setCustomerId("");
+    setCustomerSearch("");
+    setShowCustomerResults(false);
+    setTitle("");
+    setServiceDate("");
+    setStatus("scheduled");
+    setNotes("");
+    setIsRecurring(false);
+    setRecurrenceWeeks(1);
+    setErrors({
+      customerId: "",
+      title: "",
+      serviceDate: "",
+    });
+    setErrorMessage("");
+    setSuccessMessage("");
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
+
+    const newErrors = validateForm({ customerId, title, serviceDate });
+    setErrors(newErrors);
     setErrorMessage("");
     setSuccessMessage("");
+
+    if (newErrors.customerId || newErrors.title || newErrors.serviceDate) {
+      return;
+    }
+
+    setSaving(true);
 
     try {
       const response = await fetch("/api/jobs", {
@@ -35,10 +144,10 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer_id: customerId,
-          title,
+          title: title.trim(),
           service_date: serviceDate || null,
           status,
-          notes,
+          notes: notes.trim(),
           is_recurring: isRecurring,
           recurrence_weeks: isRecurring ? recurrenceWeeks : null,
         }),
@@ -48,19 +157,12 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
 
       if (!response.ok) {
         setErrorMessage(result.error || "Failed to create job.");
-        setSaving(false);
         return;
       }
 
       setSuccessMessage("Job created successfully.");
-      setCustomerId("");
-      setTitle("");
-      setServiceDate("");
-      setStatus("scheduled");
-      setNotes("");
-      setIsRecurring(false);
-      setRecurrenceWeeks(1);
-      window.location.reload();
+      handleCancel();
+      router.refresh();
     } catch {
       setErrorMessage("Unable to create job.");
     } finally {
@@ -71,27 +173,78 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-slate-900">New Job</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+          New Job
+        </h2>
         <p className="mt-1 text-sm text-slate-500">
           Schedule work for any customer.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <Field label="Customer">
-          <select
-            required
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-          >
-            <option value="">Select a customer…</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name || "Unnamed"}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <input
+              type="text"
+              value={customerSearch}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCustomerSearch(value);
+                setCustomerId("");
+                setShowCustomerResults(true);
+                setErrors((prev) => ({
+                  ...prev,
+                  customerId: value.trim() ? "" : "Please select a customer.",
+                }));
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+              onFocus={() => setShowCustomerResults(true)}
+              onBlur={() => {
+                setTimeout(() => {
+                  setShowCustomerResults(false);
+
+                  if (selectedCustomer) {
+                    setCustomerSearch(selectedCustomer.name);
+                  }
+                }, 150);
+              }}
+              className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+                errors.customerId
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+              }`}
+              placeholder="Search customers..."
+              autoComplete="off"
+            />
+
+            {showCustomerResults && (
+              <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => (
+                    <button
+                      key={customer.id}
+                      type="button"
+                      onMouseDown={() =>
+                        handleCustomerSelect(customer.id, customer.name)
+                      }
+                      className="block w-full border-b border-slate-100 px-4 py-3 text-left text-sm text-slate-700 transition last:border-b-0 hover:bg-slate-50"
+                    >
+                      {customer.name}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-slate-500">
+                    No customers found.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {errors.customerId ? (
+            <p className="mt-1 text-sm text-red-600">{errors.customerId}</p>
+          ) : null}
         </Field>
 
         <Field label="Job Title">
@@ -99,20 +252,54 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
             type="text"
             required
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+            onChange={(e) => {
+              const value = e.target.value;
+              setTitle(value);
+              setErrors((prev) => ({
+                ...prev,
+                ...validateForm({ customerId, title: value, serviceDate }),
+              }));
+              setErrorMessage("");
+              setSuccessMessage("");
+            }}
+            spellCheck={true}
+            autoCorrect="on"
+            className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+              errors.title
+                ? "border-red-500 focus:ring-red-200"
+                : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+            }`}
             placeholder="Weekly Mowing"
           />
+          {errors.title ? (
+            <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+          ) : null}
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Service Date">
             <input
               type="date"
               value={serviceDate}
-              onChange={(e) => setServiceDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              onChange={(e) => {
+                const value = e.target.value;
+                setServiceDate(value);
+                setErrors((prev) => ({
+                  ...prev,
+                  ...validateForm({ customerId, title, serviceDate: value }),
+                }));
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+              className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:ring-2 ${
+                errors.serviceDate
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-slate-300 focus:border-slate-900 focus:ring-slate-200"
+              }`}
             />
+            {errors.serviceDate ? (
+              <p className="mt-1 text-sm text-red-600">{errors.serviceDate}</p>
+            ) : null}
           </Field>
 
           <Field label="Status">
@@ -132,15 +319,20 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
         <Field label="Notes">
           <textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
+            onChange={(e) => {
+              setNotes(e.target.value);
+              setErrorMessage("");
+              setSuccessMessage("");
+            }}
+            rows={4}
+            spellCheck={true}
+            autoCorrect="on"
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             placeholder="Any notes for this job…"
           />
         </Field>
 
-        {/* Recurring toggle */}
-        <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+        <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
           <label className="flex cursor-pointer items-center gap-3">
             <div className="relative">
               <input
@@ -149,14 +341,24 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
                 checked={isRecurring}
                 onChange={(e) => setIsRecurring(e.target.checked)}
               />
-              <div className={`h-5 w-9 rounded-full transition-colors ${isRecurring ? "bg-emerald-500" : "bg-slate-300"}`} />
-              <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isRecurring ? "translate-x-4" : "translate-x-0.5"}`} />
+              <div
+                className={`h-5 w-9 rounded-full transition-colors ${
+                  isRecurring ? "bg-emerald-500" : "bg-slate-300"
+                }`}
+              />
+              <div
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                  isRecurring ? "translate-x-4" : "translate-x-0.5"
+                }`}
+              />
             </div>
-            <span className="text-sm font-medium text-slate-700">Recurring job</span>
+            <span className="text-sm font-medium text-slate-700">
+              Recurring job
+            </span>
           </label>
 
-          {isRecurring && (
-            <div className="flex items-center gap-2 pl-1">
+          {isRecurring ? (
+            <div className="flex flex-wrap items-center gap-2 pl-1">
               <span className="text-sm text-slate-600">Repeats every</span>
               <select
                 value={recurrenceWeeks}
@@ -168,9 +370,11 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
                 <option value={3}>3 weeks</option>
                 <option value={4}>4 weeks</option>
               </select>
-              <span className="text-xs text-slate-400">— next job auto-created when this one is completed</span>
+              <span className="text-xs text-slate-400">
+                — next job auto-created when this one is completed
+              </span>
             </div>
-          )}
+          ) : null}
         </div>
 
         {errorMessage ? (
@@ -185,13 +389,24 @@ export function CreateJobFormGlobal({ customers }: CreateJobFormGlobalProps) {
           </p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-        >
-          {saving ? "Saving…" : "Create Job"}
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="submit"
+            disabled={saving || !isFormValid}
+            className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Create Job"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={saving}
+            className="w-full rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );
