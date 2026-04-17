@@ -112,11 +112,75 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const wasNotCompleted = existingJob.status !== "completed";
-    const isNowCompleted = body.status === "completed";
-    const jobIsRecurring = data.is_recurring ?? existingJob.is_recurring;
-    const weeks = data.recurrence_weeks ?? existingJob.recurrence_weeks;
+const isNowCompleted = body.status === "completed";
 
-    if (wasNotCompleted && isNowCompleted && jobIsRecurring && weeks) {
+const jobIsRecurring = data.is_recurring ?? existingJob.is_recurring;
+const weeks = data.recurrence_weeks ?? existingJob.recurrence_weeks;
+const recurrenceType =
+  data.recurrence_type ?? existingJob.recurrence_type;
+const recurrenceEndDate =
+  data.recurrence_end_date ?? existingJob.recurrence_end_date;
+
+if (wasNotCompleted && isNowCompleted && jobIsRecurring && weeks) {
+  const currentDate = data.service_date ?? existingJob.service_date;
+
+  let nextDate: string | null = null;
+
+  if (currentDate) {
+    const d = new Date(currentDate + "T12:00:00");
+    d.setDate(d.getDate() + weeks * 7);
+    nextDate = d.toISOString().split("T")[0];
+  }
+
+  // 🚨 STOP if past recurrence end date
+  if (recurrenceEndDate && nextDate) {
+    const next = new Date(nextDate + "T12:00:00");
+    const end = new Date(recurrenceEndDate + "T12:00:00");
+
+    if (next > end) {
+      // Stop creating future jobs
+      return NextResponse.json({ job: data }, { status: 200 });
+    }
+  }
+
+  let nextScheduledStart: string | null = null;
+  let nextScheduledEnd: string | null = null;
+
+  const currentScheduledStart =
+    data.scheduled_start ?? existingJob.scheduled_start;
+  const currentScheduledEnd =
+    data.scheduled_end ?? existingJob.scheduled_end;
+
+  if (currentScheduledStart) {
+    const start = new Date(currentScheduledStart);
+    start.setDate(start.getDate() + weeks * 7);
+    nextScheduledStart = start.toISOString();
+  }
+
+  if (currentScheduledEnd) {
+    const end = new Date(currentScheduledEnd);
+    end.setDate(end.getDate() + weeks * 7);
+    nextScheduledEnd = end.toISOString();
+  }
+
+  await supabase.from("jobs").insert([
+    {
+      user_id: existingJob.user_id ?? null,
+      customer_id: existingJob.customer_id,
+      technician_id: existingJob.technician_id ?? null,
+      title: existingJob.title,
+      service_date: nextDate,
+      scheduled_start: nextScheduledStart,
+      scheduled_end: nextScheduledEnd,
+      status: "scheduled",
+      notes: existingJob.notes ?? null,
+      is_recurring: true,
+      recurrence_weeks: weeks,
+      recurrence_type: recurrenceType,
+      recurrence_end_date: recurrenceEndDate,
+    },
+  ]);
+}
       const currentDate = data.service_date ?? existingJob.service_date;
       let nextDate: string | null = null;
 

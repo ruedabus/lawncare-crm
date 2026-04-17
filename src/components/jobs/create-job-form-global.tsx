@@ -31,8 +31,6 @@ export function CreateJobFormGlobal({
   customers,
   technicians,
 }: CreateJobFormGlobalProps) {
-  console.log("TECHS IN FORM:", technicians);	
-  console.log("TECHNICIANS:", technicians);	
   const router = useRouter();
 
   const [customerId, setCustomerId] = useState("");
@@ -47,7 +45,7 @@ export function CreateJobFormGlobal({
   const [status, setStatus] = useState("scheduled");
   const [notes, setNotes] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceWeeks, setRecurrenceWeeks] = useState(1);
+  const [recurrenceWeeks, setRecurrenceWeeks] = useState<string | number>(1);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -110,11 +108,17 @@ export function CreateJobFormGlobal({
       }
     }
 
-    if (values.scheduledStart && Number.isNaN(new Date(values.scheduledStart).getTime())) {
+    if (
+      values.scheduledStart &&
+      Number.isNaN(new Date(values.scheduledStart).getTime())
+    ) {
       newErrors.scheduledStart = "Please enter a valid start time.";
     }
 
-    if (values.scheduledEnd && Number.isNaN(new Date(values.scheduledEnd).getTime())) {
+    if (
+      values.scheduledEnd &&
+      Number.isNaN(new Date(values.scheduledEnd).getTime())
+    ) {
       newErrors.scheduledEnd = "Please enter a valid end time.";
     }
 
@@ -225,7 +229,14 @@ export function CreateJobFormGlobal({
           status,
           notes: notes.trim() || null,
           is_recurring: isRecurring,
-          recurrence_weeks: isRecurring ? recurrenceWeeks : null,
+          recurrence_weeks:
+            isRecurring && typeof recurrenceWeeks === "number"
+              ? recurrenceWeeks
+              : null,
+          recurrence_type:
+            isRecurring && typeof recurrenceWeeks === "string"
+              ? recurrenceWeeks
+              : null,
         }),
       });
 
@@ -447,7 +458,9 @@ export function CreateJobFormGlobal({
               }`}
             />
             {errors.scheduledStart ? (
-              <p className="mt-1 text-sm text-red-600">{errors.scheduledStart}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.scheduledStart}
+              </p>
             ) : null}
           </Field>
 
@@ -528,14 +541,28 @@ export function CreateJobFormGlobal({
             <div className="flex flex-wrap items-center gap-2 pl-1">
               <span className="text-sm text-slate-600">Repeats every</span>
               <select
-                value={recurrenceWeeks}
-                onChange={(e) => setRecurrenceWeeks(Number(e.target.value))}
+                value={String(recurrenceWeeks)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (
+                    value === "weekly_6_months" ||
+                    value === "biweekly_6_months"
+                  ) {
+                    setRecurrenceWeeks(value);
+                  } else {
+                    setRecurrenceWeeks(Number(value));
+                  }
+                }}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value={1}>1 week</option>
-                <option value={2}>2 weeks</option>
-                <option value={3}>3 weeks</option>
-                <option value={4}>4 weeks</option>
+                <option value="1">1 week</option>
+                <option value="2">2 weeks</option>
+                <option value="3">3 weeks</option>
+                <option value="4">4 weeks</option>
+                <option value="weekly_6_months">Weekly for 6 months</option>
+                <option value="biweekly_6_months">
+                  Bi-weekly for 6 months
+                </option>
               </select>
               <span className="text-xs text-slate-400">
                 — next job auto-created when this one is completed
