@@ -17,6 +17,7 @@ type Settings = {
   notify_unpaid_invoice?: boolean;
   notify_upcoming_task?: boolean;
   notify_new_lead?: boolean;
+  lead_capture_slug?: string;
 };
 
 type UserInfo = {
@@ -25,12 +26,13 @@ type UserInfo = {
   name: string;
 };
 
-type Tab = "business" | "account" | "location" | "notifications" | "security";
+type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "business", label: "Business Profile" },
   { id: "account", label: "Account" },
   { id: "security", label: "Security" },
+  { id: "qrcode", label: "QR Lead Capture" },
   { id: "location", label: "Service Location" },
   { id: "notifications", label: "Notifications" },
 ];
@@ -75,6 +77,9 @@ export function SettingsTabs({
         <ServiceLocationTab settings={settings} />
       )}
       {activeTab === "security" && <SecurityTab />}
+      {activeTab === "qrcode" && (
+        <QrCodeTab slug={settings.lead_capture_slug ?? ""} />
+      )}
       {activeTab === "notifications" && (
         <NotificationsTab settings={settings} />
       )}
@@ -515,6 +520,180 @@ function NotificationsTab({ settings }: { settings: Settings }) {
         <SaveRow status={status} errorMsg={errorMsg} />
       </form>
     </SettingsCard>
+  );
+}
+
+// ── QR Lead Capture ──────────────────────────────────────────────────────────
+
+function QrCodeTab({ slug: initialSlug }: { slug: string }) {
+  const [slug, setSlug] = useState(initialSlug);
+  const [editSlug, setEditSlug] = useState(initialSlug);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error" | "generating">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://www.yardpilot.net";
+  const captureUrl = slug ? `${baseUrl}/leads/capture/${slug}` : "";
+  const qrImageUrl = captureUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(captureUrl)}&color=1a5c2a&bgcolor=ffffff&format=png`
+    : "";
+
+  async function generateSlug() {
+    setStatus("generating");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/settings/slug", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to generate");
+      setSlug(data.slug);
+      setEditSlug(data.slug);
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Error");
+      setStatus("error");
+    }
+  }
+
+  async function saveSlug(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editSlug.trim()) return;
+    const clean = editSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    setStatus("saving");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_capture_slug: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      setSlug(clean);
+      setEditSlug(clean);
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Save failed");
+      setStatus("error");
+    }
+  }
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(captureUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="space-y-6">
+      <SettingsCard
+        title="QR Lead Capture"
+        description="Customers scan your QR code and fill out a quick form — the lead lands straight in your CRM."
+      >
+        {!slug ? (
+          /* No slug yet — first time setup */
+          <div className="space-y-4 text-center py-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50">
+              <svg className="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
+              </svg>
+            </div>
+            <p className="text-sm text-slate-500">Generate your unique capture link to get started.</p>
+            {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
+            <button
+              onClick={generateSlug}
+              disabled={status === "generating"}
+              className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {status === "generating" ? "Generating…" : "Generate My Capture Link"}
+            </button>
+          </div>
+        ) : (
+          /* Has slug — show QR + management */
+          <div className="space-y-6">
+            {/* QR Code display */}
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <div className="shrink-0 rounded-2xl border-2 border-emerald-100 bg-white p-3 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={qrImageUrl}
+                  alt="QR Code"
+                  width={160}
+                  height={160}
+                  className="rounded-lg"
+                />
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Your capture link</p>
+                  <p className="mt-1 break-all text-sm font-medium text-slateald-800">{captureUrl}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={copyLink}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  >
+                    {copied ? "✓ Copied!" : "Copy Link"}
+                  </button>
+                  <a
+                    href={qrImageUrl}
+                    download="yardpilot-qr-code.png"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+                  >
+                    Download QR
+                  </a>
+                  <a
+                    href={captureUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  >
+                    Preview Page
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Print tip */}
+            <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+              <p className="text-xs text-amber-700">
+                <strong>💡 Tip:</strong> Download the QR code and print it on truck magnets, yard signs, door hangers, or business cards. Every scan drops straight into your Leads list.
+              </p>
+            </div>
+
+            {/* Slug editor */}
+            <div className="border-t border-slate-100 pt-4">
+              <p className="mb-3 text-sm font-medium text-slate-700">Customize your link</p>
+              <form onSubmit={saveSlug} className="flex gap-2">
+                <div className="flex flex-1 items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-sm">
+                  <span className="whitespace-nowrap px-3 text-slate-400">…/leads/capture/</span>
+                  <input
+                    type="text"
+                    value={editSlug}
+                    onChange={(e) => setEditSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                    className="flex-1 bg-transparent py-2.5 pr-3 text-slate-900 outline-none"
+                    placeholder="your-business-name"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={status === "saving" || editSlug === slug}
+                  className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-40"
+                >
+                  {status === "saving" ? "Saving…" : "Save"}
+                </button>
+              </form>
+              {status === "saved" && <p className="mt-2 text-sm text-emerald-600">✓ Saved</p>}
+              {status === "error" && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
+            </div>
+          </div>
+        )}
+      </SettingsCard>
+    </div>
   );
 }
 
