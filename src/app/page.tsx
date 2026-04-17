@@ -95,7 +95,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/YardPilot-logo.png" alt="YardPilot" className="h-10 w-auto" />
+            <img src="/YardPilot-logo.png" alt="YardPilot" className="h-16 w-auto" />
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
@@ -316,7 +316,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/YardPilot-logo.png" alt="YardPilot" className="h-8 w-auto" />
+            <img src="/YardPilot-logo.png" alt="YardPilot" className="h-12 w-auto" />
           </div>
           <p className="text-sm text-slate-400">
             © {new Date().getFullYear()} YardPilot. All rights reserved.
