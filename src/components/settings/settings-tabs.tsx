@@ -78,7 +78,11 @@ export function SettingsTabs({
       )}
       {activeTab === "security" && <SecurityTab />}
       {activeTab === "qrcode" && (
-        <QrCodeTab slug={settings.lead_capture_slug ?? ""} />
+        <QrCodeTab
+          slug={settings.lead_capture_slug ?? ""}
+          businessName={settings.business_name}
+          onGoToBusinessProfile={() => setActiveTab("business")}
+        />
       )}
       {activeTab === "notifications" && (
         <NotificationsTab settings={settings} />
@@ -525,7 +529,7 @@ function NotificationsTab({ settings }: { settings: Settings }) {
 
 // ── QR Lead Capture ──────────────────────────────────────────────────────────
 
-function QrCodeTab({ slug: initialSlug }: { slug: string }) {
+function QrCodeTab({ slug: initialSlug, businessName, onGoToBusinessProfile }: { slug: string; businessName?: string; onGoToBusinessProfile?: () => void }) {
   const [slug, setSlug] = useState(initialSlug);
   const [editSlug, setEditSlug] = useState(initialSlug);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error" | "generating">("idle");
@@ -587,6 +591,25 @@ function QrCodeTab({ slug: initialSlug }: { slug: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Warning if business name not set */}
+      {!businessName && (
+        <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+          <svg className="mt-0.5 h-5 w-5 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+          </svg>
+          <p className="text-sm text-blue-700">
+            <strong>Tip:</strong> Set your business name in{" "}
+            <button
+              className="underline underline-offset-2 hover:text-blue-900"
+              onClick={onGoToBusinessProfile}
+            >
+              Business Profile
+            </button>{" "}
+            first — it will appear on your capture page and be used to generate your link.
+          </p>
+        </div>
+      )}
+
       <SettingsCard
         title="QR Lead Capture"
         description="Customers scan your QR code and fill out a quick form — the lead lands straight in your CRM."
