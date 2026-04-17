@@ -61,8 +61,9 @@ export default async function JobsPage() {
     service_date: job.service_date,
     notes: job.notes,
     customer_id: job.customer_id,
-    customer_name:
-      (job.customers as { name: string | null } | null)?.name ?? null,
+    customer_name: Array.isArray(job.customers)
+  ? job.customers[0]?.name ?? null
+  : null,
     scheduled_start: job.scheduled_start,
     scheduled_end: job.scheduled_end,
   }));

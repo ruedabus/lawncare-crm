@@ -7,6 +7,7 @@ import { CreateJobForm } from "../../../components/jobs/create-job-form";
 import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-form";
 import InvoiceActions from "../../../components/invoices/invoice-actions";
 import { EditCustomerForm } from "../../../components/customers/edit-customer-form";
+import { redirect } from "next/navigation";
 
 type CustomerDetailsPageProps = {
   params: Promise<{
