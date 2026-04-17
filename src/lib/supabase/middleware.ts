@@ -35,9 +35,14 @@ export async function updateSession(request: NextRequest) {
 
   // ✅ PUBLIC ROUTES (VERY IMPORTANT)
   const isPublicRoute =
+    pathname === "/" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth/callback") ||
-    pathname.startsWith("/set-password");
+    pathname.startsWith("/set-password") ||
+    pathname.startsWith("/leads/capture") ||
+    pathname.startsWith("/payment-success") ||
+    pathname.startsWith("/payment-cancelled") ||
+    pathname.startsWith("/mfa");
 
   // 🚫 Not logged in → redirect to login
   if (!user && !isPublicRoute) {
