@@ -326,3 +326,126 @@ export function estimateSentEmail(d: EstimateEmailData): string {
 
   return emailShell(content, "#0f172a");
 }
+
+// ── Technician Daily Digest ───────────────────────────────────────────────────
+
+export type TechJobItem = {
+  type: "job";
+  title: string;
+  customerName: string;
+  address: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  notes: string | null;
+};
+
+export type TechTaskItem = {
+  type: "task";
+  title: string;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  dueDate: string | null;
+  notes: string | null;
+};
+
+export type TechReminderData = {
+  techName: string;
+  businessName: string;
+  businessPhone?: string;
+  date: string; // e.g. "Monday, April 15"
+  items: (TechJobItem | TechTaskItem)[];
+};
+
+export function technicianReminderEmail(d: TechReminderData): string {
+  function formatTime(iso: string | null) {
+    if (!iso) return null;
+    const dt = new Date(iso);
+    return dt.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "America/New_York",
+    });
+  }
+
+  const itemRows = d.items
+    .map((item, i) => {
+      const startTime = formatTime(item.scheduledStart);
+      const endTime = formatTime(item.scheduledEnd);
+      const timeStr =
+        startTime && endTime
+          ? `${startTime} – ${endTime}`
+          : startTime
+          ? `Starts ${startTime}`
+          : item.type === "task" && item.dueDate
+          ? `Due ${item.dueDate}`
+          : "Time TBD";
+
+      const badge =
+        item.type === "job"
+          ? `<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;">Job</span>`
+          : `<span style="background:#e0e7ff;color:#3730a3;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;">Task</span>`;
+
+      const detail =
+        item.type === "job"
+          ? `<p style="margin:4px 0 0;font-size:13px;color:#475569;">
+              ${item.customerName}${item.address ? ` · ${item.address}` : ""}
+             </p>`
+          : "";
+
+      const notes =
+        item.notes
+          ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;font-style:italic;">${item.notes}</p>`
+          : "";
+
+      const divider =
+        i < d.items.length - 1
+          ? `<tr><td style="padding:0 32px;"><hr style="border:none;border-top:1px solid #f1f5f9;margin:0;" /></td></tr>`
+          : "";
+
+      return `
+        <tr><td style="padding:16px 32px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            ${badge}
+            <span style="font-size:13px;color:#94a3b8;font-weight:500;">${timeStr}</span>
+          </div>
+          <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${item.title}</p>
+          ${detail}
+          ${notes}
+        </td></tr>
+        ${divider}
+      `;
+    })
+    .join("");
+
+  const content = `
+    <tr><td style="padding:32px 32px 16px;">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.05em;">
+        Daily Schedule
+      </p>
+      <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;">
+        Good morning, ${d.techName}!
+      </p>
+      <p style="margin:8px 0 0;font-size:15px;color:#475569;">
+        Here's your schedule for <strong>${d.date}</strong> from ${d.businessName}.
+        You have <strong>${d.items.length} item${d.items.length !== 1 ? "s" : ""}</strong> today.
+      </p>
+    </td></tr>
+
+    <tr><td style="padding:8px 32px 0;">
+      <div style="background:#f8fafc;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          ${itemRows}
+        </table>
+      </div>
+    </td></tr>
+
+    <tr><td style="padding:24px 32px 32px;">
+      <p style="margin:0;font-size:13px;color:#64748b;">
+        Questions or changes? Contact ${d.businessName}${d.businessPhone ? ` at <strong>${d.businessPhone}</strong>` : ""}.
+      </p>
+    </td></tr>
+  `;
+
+  return emailShell(content, "#059669");
+}
