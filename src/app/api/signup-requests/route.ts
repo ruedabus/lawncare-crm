@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     if (adminEmails.length > 0) {
       try {
         await sendEmail({
-          from: "YardPilot <no-reply@mail.yardpilot.net>",
+          fromName: "YardPilot",
           to: adminEmails,
           subject: `New signup request: ${full_name}${company_name ? " — " + company_name : ""}`,
           html: `
