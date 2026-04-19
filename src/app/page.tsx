@@ -530,16 +530,16 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href={plan.ctaHref}
-                  className={[
-                    "mt-8 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition",
-                    plan.highlight
-                      ? "bg-white text-emerald-700 hover:bg-emerald-50"
-                      : "bg-emerald-600 text-white hover:bg-emerald-500",
-                  ].join(" ")}
-                >
-                  {plan.cta}
-                </Link>
+  href={plan.ctaHref}
+  className={[
+    "mt-8 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition",
+    plan.highlight
+      ? "border border-white bg-white !text-slate-900 shadow-md hover:bg-emerald-50"
+      : "bg-emerald-600 text-white hover:bg-emerald-500",
+  ].join(" ")}
+>
+  {plan.cta}
+</Link>
               </div>
             ))}
           </div>
