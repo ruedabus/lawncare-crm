@@ -1,5 +1,3 @@
-import { createClient, createServiceClient } from "../../../../lib/supabase/server";
-import { isAdminEmail } from "../../../../lib/auth/admin";
 import { NextResponse } from "next/server";
 import {
   createClient,
