@@ -51,8 +51,6 @@ export default async function JobsPage() {
   ]);
 
   // Debug logs (optional)
-  console.log("TECHNICIANS ERROR:", techniciansError);
-  console.log("TECHNICIANS DATA:", technicians);
 
   const jobList = (jobs ?? []).map((job) => ({
     id: job.id,

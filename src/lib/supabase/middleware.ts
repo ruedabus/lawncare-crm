@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 🔐 Logged in → prevent going back to login
+  // ✅ Already logged in → skip login page
   if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }

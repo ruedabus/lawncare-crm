@@ -358,7 +358,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Trust strip ────────────────────────────────────────────────────── */}
+      {/* ── Trust strip ──────────────────────────────────── */}
       <section className="border-y border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-4 px-6 py-5 text-sm font-medium text-slate-500 lg:px-8">
           <span className="inline-flex items-center gap-2">
@@ -367,48 +367,52 @@ export default function LandingPage() {
           </span>
           <span className="inline-flex items-center gap-2">
             <Check className="h-4 w-4 text-emerald-500" />
-            Works on iPhone &amp; Android
+            Mobile-ready PWA
           </span>
           <span className="inline-flex items-center gap-2">
             <Check className="h-4 w-4 text-emerald-500" />
-            No contracts
+            QR lead capture
           </span>
           <span className="inline-flex items-center gap-2">
             <Check className="h-4 w-4 text-emerald-500" />
-            Cancel anytime
+            Daily tech reminders
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <Check className="h-4 w-4 text-emerald-500" />
+            Multi-factor login security
           </span>
         </div>
       </section>
 
-      {/* ── Features ──────────────────────────────────────────────────────── */}
-      <section id="features" className="px-6 py-24 lg:px-8">
+      {/* ── Features grid ───────────────────────────────── */}
+      <section id="features" className="bg-white px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto mb-16 max-w-3xl text-center">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">
               Features
             </p>
             <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
-              Everything your lawn care business needs to run smoothly
+              Everything your crew needs
             </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              YardPilot is built for real lawn care workflows, not generic CRM
-              templates dressed up in green.
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
+              Built specifically for lawn care — not a generic tool bolted
+              together. Every feature is designed around how you actually work.
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+                className="group rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:border-emerald-200 hover:shadow-md"
               >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 ring-1 ring-emerald-100">
-                  <Icon path={f.icon} cls="h-5 w-5 text-emerald-600" />
+                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100">
+                  <Icon path={f.icon} />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-950">
+                <h3 className="mb-2 text-base font-semibold text-slate-900">
                   {f.title}
                 </h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
+                <p className="text-sm leading-6 text-slate-500">
                   {f.description}
                 </p>
               </div>
@@ -417,125 +421,122 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonial ───────────────────────────────────────────────────── */}
-      <section className="px-6 pb-24 lg:px-8">
-        <div className="mx-auto max-w-6xl rounded-[2rem] bg-slate-950 px-8 py-16 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] sm:px-12">
-          <div className="mx-auto max-w-4xl text-center">
-            <svg
-              className="mx-auto mb-6 h-10 w-10 text-emerald-400/70"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-            </svg>
-
-            <p className="text-2xl font-medium leading-relaxed text-slate-100 sm:text-3xl">
-              “Before YardPilot I was handwriting invoices and texting customers
-              photos of them. Now everything looks professional, payments come
-              in faster, and my crew knows the schedule before they leave the
-              house.”
-            </p>
-
-            <div className="mt-8">
-              <p className="text-lg font-semibold">Happy Grass, LLC</p>
-              <p className="mt-1 text-sm text-slate-400">
-                YardPilot pilot client · Brooksville, FL
-              </p>
-            </div>
-          </div>
+      {/* ── Testimonial band ─────────────────────────────── */}
+      <section className="bg-emerald-700 px-6 py-20 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <svg
+            className="mx-auto mb-6 h-10 w-10 text-emerald-300 opacity-60"
+            fill="currentColor"
+            viewBox="0 0 32 32"
+            aria-hidden="true"
+          >
+            <path d="M10 8C6.7 8 4 10.7 4 14v10h10V14H7c0-1.7 1.3-3 3-3V8zm14 0c-3.3 0-6 2.7-6 6v10h10V14h-7c0-1.7 1.3-3 3-3V8z" />
+          </svg>
+          <p className="text-2xl font-medium leading-relaxed text-white sm:text-3xl">
+            "I used to run everything in a notebook and text messages. YardPilot
+            gave me three extra hours a week back and my customers actually pay
+            faster now."
+          </p>
+          <p className="mt-8 text-base font-semibold text-emerald-200">
+            Marcus D. — Solo lawn care operator, Texas
+          </p>
         </div>
       </section>
 
-      {/* ── Pricing ───────────────────────────────────────────────────────── */}
+      {/* ── Pricing ───────────────────────────────────────── */}
       <section id="pricing" className="bg-slate-50 px-6 py-24 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto mb-16 max-w-3xl text-center">
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto mb-16 max-w-2xl text-center">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">
               Pricing
             </p>
             <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
-              Simple pricing for lawn care businesses
+              Simple, honest pricing
             </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              Choose the plan that fits your business and start with a free
-              trial.
+            <p className="mt-5 text-lg text-slate-600">
+              Start free. Scale when you're ready. No hidden fees.
             </p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-[2rem] p-8 ${
+                className={[
+                  "relative flex flex-col rounded-2xl border p-8 shadow-sm",
                   plan.highlight
-                    ? "bg-slate-950 text-white shadow-[0_30px_80px_rgba(15,23,42,0.20)]"
-                    : "border border-slate-200 bg-white shadow-sm"
-                }`}
+                    ? "border-emerald-500 bg-emerald-700 text-white shadow-[0_20px_60px_rgba(16,185,129,0.22)]"
+                    : "border-slate-200 bg-white",
+                ].join(" ")}
               >
                 {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="rounded-full bg-emerald-500 px-4 py-1 text-xs font-bold tracking-wide text-white shadow">
-                      MOST POPULAR
-                    </span>
-                  </div>
+                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-emerald-400 px-4 py-1 text-xs font-semibold text-emerald-900 shadow">
+                    Most popular
+                  </span>
                 )}
-
                 <p
-                  className={`text-sm font-semibold uppercase tracking-[0.22em] ${
-                    plan.highlight ? "text-emerald-400" : "text-emerald-600"
-                  }`}
+                  className={[
+                    "text-sm font-semibold uppercase tracking-widest",
+                    plan.highlight ? "text-emerald-300" : "text-emerald-600",
+                  ].join(" ")}
                 >
                   {plan.name}
                 </p>
-
-                <div className="mt-4 flex items-end gap-1">
-                  <span className="text-5xl font-extrabold tracking-tight">
+                <div className="mt-3 flex items-end gap-1">
+                  <span
+                    className={[
+                      "text-5xl font-extrabold",
+                      plan.highlight ? "text-white" : "text-slate-950",
+                    ].join(" ")}
+                  >
                     {plan.price}
                   </span>
-                  {plan.period ? (
-                    <span className="mb-1.5 text-lg text-slate-400">
-                      {plan.period}
-                    </span>
-                  ) : null}
+                  <span
+                    className={[
+                      "mb-1 text-sm",
+                      plan.highlight ? "text-emerald-200" : "text-slate-500",
+                    ].join(" ")}
+                  >
+                    {plan.period}
+                  </span>
                 </div>
-
                 <p
-                  className={`mt-3 text-sm leading-7 ${
-                    plan.highlight ? "text-slate-300" : "text-slate-600"
-                  }`}
+                  className={[
+                    "mt-2 text-sm",
+                    plan.highlight ? "text-emerald-100" : "text-slate-500",
+                  ].join(" ")}
                 >
                   {plan.description}
                 </p>
-
-                <ul className="mt-8 space-y-3">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-3 text-sm">
+                <ul className="mt-6 flex-1 space-y-3">
+                  {plan.features.map((feat) => (
+                    <li key={feat} className="flex items-start gap-2 text-sm">
                       <Check
-                        className={`mt-0.5 h-4 w-4 shrink-0 ${
+                        className={[
+                          "mt-0.5 h-4 w-4 shrink-0",
                           plan.highlight
-                            ? "text-emerald-400"
-                            : "text-emerald-500"
-                        }`}
+                            ? "text-emerald-300"
+                            : "text-emerald-500",
+                        ].join(" ")}
                       />
                       <span
                         className={
-                          plan.highlight ? "text-slate-300" : "text-slate-700"
+                          plan.highlight ? "text-emerald-50" : "text-slate-600"
                         }
                       >
-                        {f}
+                        {feat}
                       </span>
                     </li>
                   ))}
                 </ul>
-
                 <Link
                   href={plan.ctaHref}
-                  className={`mt-8 inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold transition ${
+                  className={[
+                    "mt-8 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition",
                     plan.highlight
-                      ? "bg-emerald-500 text-white hover:bg-emerald-400"
-                      : "border border-slate-200 bg-slate-50 text-slate-900 hover:bg-slate-100"
-                  }`}
+                      ? "bg-white text-emerald-700 hover:bg-emerald-50"
+                      : "bg-emerald-600 text-white hover:bg-emerald-500",
+                  ].join(" ")}
                 >
                   {plan.cta}
                 </Link>
@@ -545,73 +546,115 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Bottom CTA ────────────────────────────────────────────────────── */}
-      <section className="px-6 py-24 lg:px-8">
-        <div className="mx-auto max-w-5xl rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-slate-50 px-8 py-16 text-center shadow-sm sm:px-12">
-          <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
-            Ready to run a more professional business?
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Join lawn care pros using YardPilot to save time, stay organized,
-            and get paid faster.
-          </p>
+      {/* ── User Manual download ────────────────────────────── */}
+      <section className="border-y border-slate-200 bg-white px-6 py-16 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col items-center gap-8 rounded-2xl border border-emerald-100 bg-emerald-50 px-8 py-10 text-center sm:flex-row sm:text-left">
+            {/* Book icon */}
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+              <svg
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.6}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                />
+              </svg>
+            </div>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-slate-950">
+                YardPilot User Manual
+              </h3>
+              <p className="mt-1.5 text-sm leading-6 text-slate-600">
+                Everything you need to get the most out of YardPilot — from
+                onboarding your first customer to setting up QR lead capture,
+                MFA security, Stripe payments, and technician reminders. 15
+                chapters, fully illustrated.
+              </p>
+            </div>
+
+            <a
+              href="/YardPilot-User-Manual.docx"
+              download
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              Download Manual
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bottom CTA ────────────────────────────────────── */}
+      <section className="bg-slate-950 px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+            Ready to grow your business?
+          </h2>
+          <p className="mt-5 text-lg text-slate-400">
+            Join lawn care professionals who run their entire operation inside
+            YardPilot. Start your free trial today — no credit card required.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/start-trial"
-              className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-8 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(16,185,129,0.28)] transition hover:bg-emerald-500"
+              className="inline-flex min-w-[190px] items-center justify-center rounded-2xl bg-emerald-500 px-7 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(16,185,129,0.22)] transition hover:bg-emerald-400"
             >
               Start free trial
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-8 py-4 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+              className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border-2 border-white bg-white px-7 py-4 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
             >
               Log in
             </Link>
           </div>
-
-          <p className="mt-5 text-sm text-slate-500">
-            No credit card required
-          </p>
         </div>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-200 bg-white px-6 py-10 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/YardPilot-logo.png"
-              alt="YardPilot"
-              className="h-16 w-auto"
-            />
-          </div>
-
-          <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} YardPilot. All rights reserved.
-          </p>
-
-          <div className="flex items-center gap-4">
-            <Link
-              href="/terms"
-              className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-            >
-              Log in
-            </Link>
+      {/* ── Footer ─────────────────────────────────────────── */}
+      <footer className="bg-slate-950 px-6 pb-10 pt-4 lg:px-8">
+        <div className="mx-auto max-w-7xl border-t border-slate-800 pt-8">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="flex items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/YardPilot-logo.png"
+                alt="YardPilot"
+                className="h-12 w-auto brightness-0 invert"
+              />
+            </div>
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
+              <a href="#features" className="hover:text-white">Features</a>
+              <a href="#pricing" className="hover:text-white">Pricing</a>
+              <a href="/YardPilot-User-Manual.docx" download className="hover:text-white">User Manual</a>
+              <Link href="/terms" className="hover:text-white">Terms of Service</Link>
+              <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+              <Link href="/login" className="hover:text-white">Log in</Link>
+            </div>
+            <p className="text-xs text-slate-600">
+              &copy; {new Date().getFullYear()} YardPilot. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
