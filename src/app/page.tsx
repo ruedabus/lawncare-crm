@@ -60,13 +60,13 @@ const FEATURES = [
 
 const PLANS = [
   {
-    name: "Starter",
-    price: "Free",
-    period: "",
+    name: "Basic",
+    price: "$29.99",
+    period: "/mo",
     description: "Perfect for solo operators getting organized.",
     highlight: false,
     features: [
-      "Up to 25 customers",
+      "Up to 50 customers",
       "Invoices & online payments",
       "Lead management",
       "Job scheduling",
@@ -74,26 +74,41 @@ const PLANS = [
       "Mobile-ready access",
       "Email support",
     ],
-    cta: "Get started free",
-    ctaHref: "/login",
+    cta: "Start free trial",
+    ctaHref: "/start-trial",
   },
   {
-    name: "Premier",
-    price: "$49",
+    name: "Pro",
+    price: "$39.99",
     period: "/mo",
-    description: "For growing crews that need more power and visibility.",
+    description: "Best for growing lawn care businesses.",
     highlight: true,
     features: [
-      "Unlimited customers",
-      "Everything in Starter",
+      "Up to 100 customers",
+      "Everything in Basic",
       "Multiple technicians",
       "SMS tech reminders",
-      "Multiple QR codes",
       "Lead source tracking",
       "Priority support",
     ],
     cta: "Start free trial",
-    ctaHref: "/login",
+    ctaHref: "/start-trial",
+  },
+  {
+    name: "Premier",
+    price: "$59.99",
+    period: "/mo",
+    description: "For teams that want unlimited scale.",
+    highlight: false,
+    features: [
+      "Unlimited customers",
+      "Everything in Pro",
+      "Advanced reporting",
+      "Multiple QR codes",
+      "Priority support",
+    ],
+    cta: "Start free trial",
+    ctaHref: "/start-trial",
   },
 ];
 
@@ -116,20 +131,20 @@ function Check({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       {/* ── Nav ───────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 lg:px-8">
+      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 shadow-sm backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
           <Link href="/" className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/YardPilot-logo.png"
               alt="YardPilot"
-              className="h-32 w-auto sm:h-40"
+              className="h-20 w-auto sm:h-24"
             />
           </Link>
 
@@ -144,7 +159,7 @@ export default function LandingPage() {
               href="/start-trial"
               className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(16,185,129,0.25)] transition hover:bg-emerald-500"
             >
-              Start free
+              Start free trial
             </Link>
           </div>
         </div>
@@ -182,13 +197,13 @@ export default function LandingPage() {
                 href="/start-trial"
                 className="inline-flex min-w-[190px] items-center justify-center rounded-2xl bg-emerald-600 px-7 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(16,185,129,0.28)] transition hover:bg-emerald-500"
               >
-                Start your free account
+                Start free trial
               </Link>
               <a
-                href="#features"
+                href="#demo"
                 className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-7 py-4 text-base font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
               >
-                See how it works
+                Watch demo
               </a>
             </div>
 
@@ -208,178 +223,137 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mock product preview */}
+          {/* Real product preview */}
           <div className="mx-auto mt-16 max-w-6xl">
             <div className="rounded-[2rem] border border-white/70 bg-white/80 p-3 shadow-[0_30px_100px_rgba(15,23,42,0.14)] ring-1 ring-slate-200/70 backdrop-blur">
-              <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-950">
-                <div className="flex items-center gap-2 border-b border-white/10 bg-slate-900 px-5 py-4">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  <div className="ml-3 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                    YardPilot Dashboard
-                  </div>
-                </div>
-
-                <div className="grid gap-0 lg:grid-cols-[260px_1fr]">
-                  <div className="border-b border-white/10 bg-slate-900 p-5 lg:border-b-0 lg:border-r lg:border-white/10">
-                    <div className="space-y-2">
-                      {[
-                        "Dashboard",
-                        "Customers",
-                        "Leads",
-                        "Jobs",
-                        "Schedule",
-                        "Invoices",
-                      ].map((item, index) => (
-                        <div
-                          key={item}
-                          className={`flex items-center rounded-xl px-3 py-2.5 text-sm ${
-                            index === 0
-                              ? "bg-emerald-500/15 text-white"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          <span
-                            className={`mr-3 h-2 w-2 rounded-full ${
-                              index === 0 ? "bg-emerald-400" : "bg-slate-600"
-                            }`}
-                          />
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                        This month
-                      </p>
-                      <p className="mt-2 text-3xl font-bold text-white">$12,480</p>
-                      <p className="mt-1 text-sm text-slate-300">
-                        Revenue collected
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-5 sm:p-6 lg:p-7">
-                    <div className="grid gap-4 md:grid-cols-3">
-                      {[
-                        { label: "New leads", value: "18" },
-                        { label: "Jobs today", value: "7" },
-                        { label: "Unpaid invoices", value: "3" },
-                      ].map((card) => (
-                        <div
-                          key={card.label}
-                          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                        >
-                          <p className="text-sm font-medium text-slate-500">
-                            {card.label}
-                          </p>
-                          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-                            {card.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Today&apos;s schedule
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                              Keep the crew moving without the chaos
-                            </p>
-                          </div>
-                          <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            Live
-                          </div>
-                        </div>
-
-                        <div className="mt-5 space-y-3">
-                          {[
-                            {
-                              time: "8:00 AM",
-                              title: "Mow & edge - Pine Ridge Dr",
-                              badge: "Assigned",
-                            },
-                            {
-                              time: "10:30 AM",
-                              title: "Mulch refresh - Spring Hill",
-                              badge: "In route",
-                            },
-                            {
-                              time: "1:00 PM",
-                              title: "Estimate - New customer",
-                              badge: "Lead",
-                            },
-                          ].map((job) => (
-                            <div
-                              key={job.title}
-                              className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
-                            >
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                                  {job.time}
-                                </p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">
-                                  {job.title}
-                                </p>
-                              </div>
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
-                                {job.badge}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-sm font-semibold text-slate-900">
-                          Recent payments
-                        </p>
-                        <div className="mt-5 space-y-4">
-                          {[
-                            ["Cedar Lane Lawn", "$165"],
-                            ["Oakview Property", "$220"],
-                            ["Green Meadow HOA", "$480"],
-                          ].map(([name, amount]) => (
-                            <div
-                              key={name}
-                              className="flex items-center justify-between"
-                            >
-                              <div>
-                                <p className="text-sm font-medium text-slate-900">
-                                  {name}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  Paid online
-                                </p>
-                              </div>
-                              <p className="text-sm font-semibold text-emerald-600">
-                                {amount}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="mt-6 rounded-2xl bg-slate-900 p-4 text-white">
-                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                            Faster cash flow
-                          </p>
-                          <p className="mt-2 text-lg font-semibold">
-                            Send invoices, collect payments, and track everything
-                            in one place.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/screenshots/dashboard.png"
+                  alt="YardPilot dashboard preview"
+                  className="w-full"
+                />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Screenshots Section ───────────────────────────────────────────── */}
+      <section className="bg-white px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto mb-14 max-w-3xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">
+              Product Tour
+            </p>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
+              See YardPilot in action
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+              Manage your entire lawn care business — from leads to scheduling
+              to getting paid.
+            </p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/dashboard.png"
+                alt="YardPilot dashboard"
+                className="w-full"
+              />
+              <div className="p-5">
+                <h3 className="text-lg font-semibold text-slate-950">
+                  Dashboard
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  See customers, jobs, invoices, and revenue all in one place.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/schedule.png"
+                alt="YardPilot schedule"
+                className="w-full"
+              />
+              <div className="p-5">
+                <h3 className="text-lg font-semibold text-slate-950">
+                  Scheduling
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Organize your week and assign jobs to your crew with ease.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/invoices.png"
+                alt="YardPilot invoices"
+                className="w-full"
+              />
+              <div className="p-5">
+                <h3 className="text-lg font-semibold text-slate-950">
+                  Invoices & Payments
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Send professional invoices and get paid faster.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/leads.png"
+                alt="YardPilot leads"
+                className="w-full"
+              />
+              <div className="p-5">
+                <h3 className="text-lg font-semibold text-slate-950">
+                  Lead Tracking
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Capture and track every potential customer from first contact
+                  to close.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Demo Section ──────────────────────────────────────────────────── */}
+      <section id="demo" className="bg-slate-50 px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="mx-auto mb-12 max-w-3xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">
+              Demo
+            </p>
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
+              Watch YardPilot in action
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
+              See how a lawn care business manages jobs, customers, and payments
+              in under a minute.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-black shadow-xl">
+            <video
+              controls
+              preload="metadata"
+              className="w-full"
+              poster="/screenshots/dashboard.png"
+            >
+              <source src="/demo/yardpilot-demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </section>
@@ -431,7 +405,9 @@ export default function LandingPage() {
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 ring-1 ring-emerald-100">
                   <Icon path={f.icon} cls="h-5 w-5 text-emerald-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-950">{f.title}</h3>
+                <h3 className="text-lg font-semibold text-slate-950">
+                  {f.title}
+                </h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {f.description}
                 </p>
@@ -473,21 +449,21 @@ export default function LandingPage() {
 
       {/* ── Pricing ───────────────────────────────────────────────────────── */}
       <section id="pricing" className="bg-slate-50 px-6 py-24 lg:px-8">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           <div className="mx-auto mb-16 max-w-3xl text-center">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">
               Pricing
             </p>
             <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
-              Simple pricing that grows with you
+              Simple pricing for lawn care businesses
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              Start free, get organized, and upgrade when your business is ready
-              for more.
+              Choose the plan that fits your business and start with a free
+              trial.
             </p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-8 lg:grid-cols-3">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
@@ -518,11 +494,7 @@ export default function LandingPage() {
                     {plan.price}
                   </span>
                   {plan.period ? (
-                    <span
-                      className={`mb-1.5 text-lg ${
-                        plan.highlight ? "text-slate-400" : "text-slate-400"
-                      }`}
-                    >
+                    <span className="mb-1.5 text-lg text-slate-400">
                       {plan.period}
                     </span>
                   ) : null}
@@ -541,11 +513,15 @@ export default function LandingPage() {
                     <li key={f} className="flex items-start gap-3 text-sm">
                       <Check
                         className={`mt-0.5 h-4 w-4 shrink-0 ${
-                          plan.highlight ? "text-emerald-400" : "text-emerald-500"
+                          plan.highlight
+                            ? "text-emerald-400"
+                            : "text-emerald-500"
                         }`}
                       />
                       <span
-                        className={plan.highlight ? "text-slate-300" : "text-slate-700"}
+                        className={
+                          plan.highlight ? "text-slate-300" : "text-slate-700"
+                        }
                       >
                         {f}
                       </span>
@@ -585,7 +561,7 @@ export default function LandingPage() {
               href="/start-trial"
               className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-8 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(16,185,129,0.28)] transition hover:bg-emerald-500"
             >
-              Get started free today
+              Start free trial
             </Link>
             <Link
               href="/login"
@@ -595,7 +571,9 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="mt-5 text-sm text-slate-500">No credit card required</p>
+          <p className="mt-5 text-sm text-slate-500">
+            No credit card required
+          </p>
         </div>
       </section>
 
@@ -604,19 +582,37 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/YardPilot-logo.png" alt="YardPilot" className="h-22 w-auto" />
+            <img
+              src="/YardPilot-logo.png"
+              alt="YardPilot"
+              className="h-16 w-auto"
+            />
           </div>
 
           <p className="text-sm text-slate-500">
             © {new Date().getFullYear()} YardPilot. All rights reserved.
           </p>
 
-          <Link
-            href="/login"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-          >
-            Log in →
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/terms"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            >
+              Terms
+            </Link>
+            <Link
+              href="/privacy"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/login"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            >
+              Log in
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

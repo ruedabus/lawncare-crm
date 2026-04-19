@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import { SignupRequestActions } from "../../../components/admin/signup-request-actions";
-
+import { isAdminEmail } from "../../../lib/auth/admin";
 
 type SignupRequest = {
   id: string;
@@ -42,6 +42,10 @@ export default async function SignupRequestsPage() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (!isAdminEmail(user.email)) {
+    redirect("/dashboard");
   }
 
   const { data, error } = await supabase
