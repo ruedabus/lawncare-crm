@@ -5,8 +5,9 @@
 
 const STRIPE_API = "https://api.stripe.com/v1";
 
-function authHeader() {
-  return `Basic ${Buffer.from(process.env.STRIPE_SECRET_KEY + ":").toString("base64")}`;
+function authHeader(secretKey?: string) {
+  const key = secretKey ?? process.env.STRIPE_SECRET_KEY ?? "";
+  return `Basic ${Buffer.from(key + ":").toString("base64")}`;
 }
 
 /** Encode a plain object as application/x-www-form-urlencoded (Stripe's required format) */
@@ -26,12 +27,16 @@ function encode(obj: Record<string, string | number | undefined>, prefix = ""): 
 export type CheckoutSessionParams = {
   invoiceId: string;
   invoiceNumber: string;
-  amountCents: number; // e.g. 15000 for $150.00
+  amountCents: number;
   customerEmail?: string;
   customerName?: string;
   description?: string;
   successUrl: string;
   cancelUrl: string;
+  /** Connected Stripe account ID (acct_...) — payment is routed to this account */
+  connectedAccountId?: string;
+  /** Platform fee in percent (e.g. 0.5 = 0.5%). Only applied when connectedAccountId is set. */
+  platformFeePercent?: number;
 };
 
 export type CheckoutSession = {
@@ -39,10 +44,18 @@ export type CheckoutSession = {
   url: string;
 };
 
-/** Create a Stripe Checkout Session for a one-time invoice payment */
+/** Create a Stripe Checkout Session for a one-time invoice payment.
+ *  When connectedAccountId is provided, funds are routed to that account
+ *  (destination charge) and an optional platform fee is deducted first. */
 export async function createCheckoutSession(
   params: CheckoutSessionParams
 ): Promise<CheckoutSession> {
+  const feePercent = params.platformFeePercent ?? 0;
+  const feeAmount =
+    params.connectedAccountId && feePercent > 0
+      ? Math.round(params.amountCents * (feePercent / 100))
+      : 0;
+
   const body = encode({
     mode: "payment",
     "line_items[0][price_data][currency]": "usd",
@@ -54,8 +67,16 @@ export async function createCheckoutSession(
     "metadata[invoice_id]": params.invoiceId,
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
-    ...(params.customerEmail
-      ? { customer_email: params.customerEmail }
+    ...(params.customerEmail ? { customer_email: params.customerEmail } : {}),
+    // Destination charge — funds flow to connected account
+    ...(params.connectedAccountId
+      ? {
+          "payment_intent_data[transfer_data][destination]":
+            params.connectedAccountId,
+          ...(feeAmount > 0
+            ? { "payment_intent_data[application_fee_amount]": feeAmount }
+            : {}),
+        }
       : {}),
   });
 
@@ -80,6 +101,54 @@ export async function createCheckoutSession(
   return { id: data.id, url: data.url };
 }
 
+/** Exchange a Stripe Connect OAuth code for a stripe_user_id */
+export async function exchangeConnectCode(
+  code: string
+): Promise<{ stripeUserId: string }> {
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+  });
+
+  const res = await fetch("https://connect.stripe.com/oauth/token", {
+    method: "POST",
+    headers: {
+      Authorization: authHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || data.error) {
+    throw new Error(data.error_description ?? data.error ?? "OAuth exchange failed");
+  }
+
+  return { stripeUserId: data.stripe_user_id };
+}
+
+/** Deauthorize a connected Stripe account from the platform */
+export async function disconnectConnectedAccount(
+  stripeAccountId: string
+): Promise<void> {
+  const clientId = process.env.STRIPE_CLIENT_ID ?? "";
+  const body = new URLSearchParams({
+    client_id: clientId,
+    stripe_user_id: stripeAccountId,
+  });
+
+  await fetch("https://connect.stripe.com/oauth/deauthorize", {
+    method: "POST",
+    headers: {
+      Authorization: authHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+  // Non-fatal if this fails — we still clear the DB record
+}
+
 /** Verify a Stripe webhook signature using HMAC-SHA256 */
 export async function verifyWebhookSignature(
   payload: string,
@@ -94,7 +163,6 @@ export async function verifyWebhookSignature(
 
     if (!ts || sigs.length === 0) return false;
 
-    // Reject timestamps older than 5 minutes (replay attack protection)
     const age = Date.now() / 1000 - Number(ts);
     if (age > 300) return false;
 

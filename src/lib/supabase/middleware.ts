@@ -45,6 +45,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/payment-cancelled") ||
     pathname.startsWith("/mfa") ||
     pathname.startsWith("/api/signup-requests") ||
+    pathname.startsWith("/api/stripe/connect/callback") ||
     pathname.startsWith("/demo") ||
     pathname.startsWith("/screenshots") ||
     pathname.startsWith("/terms") ||

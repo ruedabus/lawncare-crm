@@ -18,6 +18,7 @@ type Settings = {
   notify_upcoming_task?: boolean;
   notify_new_lead?: boolean;
   lead_capture_slug?: string;
+  stripe_account_id?: string | null;
 };
 
 type UserInfo = {
@@ -26,7 +27,7 @@ type UserInfo = {
   name: string;
 };
 
-type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications";
+type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications" | "payments";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "business", label: "Business Profile" },
@@ -35,6 +36,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "qrcode", label: "QR Lead Capture" },
   { id: "location", label: "Service Location" },
   { id: "notifications", label: "Notifications" },
+  { id: "payments", label: "Payments" },
 ];
 
 export function SettingsTabs({
@@ -86,6 +88,9 @@ export function SettingsTabs({
       )}
       {activeTab === "notifications" && (
         <NotificationsTab settings={settings} />
+      )}
+      {activeTab === "payments" && (
+        <PaymentsTab stripeAccountId={settings.stripe_account_id ?? null} />
       )}
     </div>
   );
@@ -1074,3 +1079,133 @@ function SaveRow({
 
 const inputCls =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200";
+
+// ── Payments (Stripe Connect) ─────────────────────────────────────────────────
+
+function PaymentsTab({ stripeAccountId }: { stripeAccountId: string | null }) {
+  const [accountId, setAccountId] = useState(stripeAccountId);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Pick up ?stripe= query param after OAuth redirect
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const stripe = params.get("stripe");
+    if (stripe === "connected") {
+      setMsg({ type: "success", text: "Stripe account connected successfully!" });
+      // Reload settings to show the new account ID
+      window.history.replaceState({}, "", window.location.pathname + "?tab=payments");
+    } else if (stripe === "error") {
+      setMsg({ type: "error", text: "Something went wrong connecting your Stripe account. Please try again." });
+      window.history.replaceState({}, "", window.location.pathname + "?tab=payments");
+    } else if (stripe === "cancelled") {
+      setMsg({ type: "error", text: "Stripe connection was cancelled." });
+      window.history.replaceState({}, "", window.location.pathname + "?tab=payments");
+    }
+  }, []);
+
+  async function handleDisconnect() {
+    if (!confirm("Are you sure you want to disconnect your Stripe account? Future invoice payments will not be routed until you reconnect.")) return;
+    setDisconnecting(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/stripe/connect/disconnect", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to disconnect");
+      setAccountId(null);
+      setMsg({ type: "success", text: "Stripe account disconnected." });
+    } catch {
+      setMsg({ type: "error", text: "Failed to disconnect. Please try again." });
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  return (
+    <SettingsCard title="Stripe Payments" description="Connect your Stripe account so your customers can pay invoices online and funds go directly to you.">
+      {msg && (
+        <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+          msg.type === "success"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-red-200 bg-red-50 text-red-700"
+        }`}>
+          {msg.text}
+        </div>
+      )}
+
+      {accountId ? (
+        <div className="space-y-4">
+          {/* Connected state */}
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+              <svg className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-emerald-800">Stripe account connected</p>
+              <p className="text-xs text-emerald-600 font-mono mt-0.5">{accountId}</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-600">
+            Invoice payments from your customers will be deposited directly into your connected Stripe account. Standard Stripe fees (2.9% + 30¢) apply.
+          </p>
+
+          <button
+            onClick={handleDisconnect}
+            disabled={disconnecting}
+            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+          >
+            {disconnecting ? "Disconnecting..." : "Disconnect Stripe account"}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Disconnected state */}
+          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
+              <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">No Stripe account connected</p>
+              <p className="text-xs text-amber-700 mt-0.5">Online invoice payments are disabled until you connect.</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-600">
+            Connect your Stripe account to enable the <strong>Pay Now</strong> button on invoices. Your customers pay online and funds go straight to your bank — YardPilot never touches the money.
+          </p>
+
+          <ul className="space-y-1.5 text-sm text-slate-600">
+            {[
+              "Payments deposit directly to your bank account",
+              "Standard Stripe fees: 2.9% + 30¢ per transaction",
+              "No YardPilot fees on top",
+              "Create a new Stripe account or connect an existing one",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <svg className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.07 7.07a1 1 0 01-1.414 0L3.296 8.85A1 1 0 114.71 7.436l4.217 4.217 6.363-6.363a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <a
+            href="/api/stripe/connect"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#635BFF] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#5147e5]"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/>
+            </svg>
+            Connect with Stripe
+          </a>
+        </div>
+      )}
+    </SettingsCard>
+  );
+}
