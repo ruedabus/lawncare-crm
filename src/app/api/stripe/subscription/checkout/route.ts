@@ -9,7 +9,7 @@ const PRICE_MAP: Record<string, string | undefined> = {
 
 export async function POST(request: Request) {
   try {
-    const { plan, email, name, businessName } = await request.json();
+    const { plan, email, name, businessName, coupon } = await request.json();
 
     if (!plan || !email) {
       return NextResponse.json({ error: "plan and email are required" }, { status: 400 });
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       priceId,
       customerEmail: email,
       trialDays,
+      coupon: coupon ?? undefined,
       successUrl: `${appUrl}/trial-success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl}/start-trial`,
       metadata: {

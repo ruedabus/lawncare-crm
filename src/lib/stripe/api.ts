@@ -192,6 +192,7 @@ export type SubscriptionCheckoutParams = {
   priceId: string;
   customerEmail: string;
   trialDays: number;
+  coupon?: string;
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
@@ -211,6 +212,8 @@ export async function createSubscriptionCheckoutSession(
     cancel_url: params.cancelUrl,
     // Collect payment method upfront even during trial
     "payment_method_collection": "always",
+    // Apply coupon if provided (e.g. BETAUSER for 3 months free)
+    ...(params.coupon ? { "discounts[0][coupon]": params.coupon } : {}),
     ...(params.metadata
       ? Object.fromEntries(
           Object.entries(params.metadata).map(([k, v]) => [`metadata[${k}]`, v])

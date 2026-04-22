@@ -68,6 +68,11 @@ export default function StartTrialPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Read coupon code from URL params (e.g. ?coupon=BETAUSER)
+  const coupon = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("coupon") ?? undefined
+    : undefined;
+
   async function handleStart() {
     if (!selectedPlan) { setError("Please select a plan."); return; }
     if (!form.name || !form.email) { setError("Please fill in your name and email."); return; }
@@ -82,6 +87,7 @@ export default function StartTrialPage() {
           email: form.email,
           name: form.name,
           businessName: form.businessName,
+          coupon,
         }),
       });
       const data = await res.json();
