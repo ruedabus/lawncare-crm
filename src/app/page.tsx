@@ -210,7 +210,7 @@ export default function LandingPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
               <span className="inline-flex items-center gap-1.5">
                 <Check className="h-4 w-4 text-emerald-500" />
-                No credit card required
+                14-day free trial
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Check className="h-4 w-4 text-emerald-500" />
