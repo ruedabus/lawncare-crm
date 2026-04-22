@@ -613,7 +613,7 @@ export default function LandingPage() {
           </h2>
           <p className="mt-5 text-lg text-slate-400">
             Join lawn care professionals who run their entire operation inside
-            YardPilot. Start your free trial today — no credit card required.
+            YardPilot. Start your free trial today — 14 days free, card required, cancel anytime.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link

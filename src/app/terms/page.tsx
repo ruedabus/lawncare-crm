@@ -36,7 +36,7 @@ export default function TermsPage() {
       <p className="mb-4">
         You are responsible for maintaining the confidentiality of your login credentials
         and for all activity that occurs under your account. You agree to notify us
-        immediately at <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">support@yardpilot.net</a> if
+        immediately at <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">info@yardpilot.net</a> if
         you suspect any unauthorized use of your account. We will not be liable for any
         loss or damage arising from your failure to protect your credentials. You may not
         share your account with any third party or allow multiple individuals to access
@@ -197,8 +197,8 @@ export default function TermsPage() {
       <p className="mb-4">
         <strong>Informal resolution.</strong> Before filing any formal legal action,
         you agree to first contact us at{" "}
-        <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">
-          support@yardpilot.net
+        <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">
+          info@yardpilot.net
         </a>{" "}
         and give us 30 days to attempt to resolve the dispute informally.
       </p>
@@ -268,8 +268,8 @@ export default function TermsPage() {
       <address className="not-italic text-slate-700">
         <strong>YardPilot</strong><br />
         Email:{" "}
-        <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">
-          support@yardpilot.net
+        <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">
+          info@yardpilot.net
         </a>
       </address>
 

@@ -204,8 +204,8 @@ export default function PrivacyPage() {
       </ul>
       <p className="mb-4">
         To exercise any of these rights, contact us at{" "}
-        <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">
-          support@yardpilot.net
+        <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">
+          info@yardpilot.net
         </a>
         . We will respond within 30 days. We may need to verify your identity before
         processing your request.
@@ -225,8 +225,8 @@ export default function PrivacyPage() {
       </ul>
       <p className="mb-4">
         To submit a CCPA request, contact us at{" "}
-        <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">
-          support@yardpilot.net
+        <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">
+          info@yardpilot.net
         </a>{" "}
         with the subject line &ldquo;CCPA Request.&rdquo;
       </p>
@@ -270,8 +270,8 @@ export default function PrivacyPage() {
       <address className="not-italic text-slate-700">
         <strong>YardPilot</strong><br />
         Email:{" "}
-        <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">
-          support@yardpilot.net
+        <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">
+          info@yardpilot.net
         </a>
       </address>
 

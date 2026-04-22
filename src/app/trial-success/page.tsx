@@ -14,8 +14,8 @@ export default function TrialSuccessPage() {
       </p>
       <p className="mt-2 text-sm text-slate-500">
         Didn&apos;t get the email? Check your spam folder or contact{" "}
-        <a href="mailto:support@yardpilot.net" className="text-emerald-600 underline">
-          support@yardpilot.net
+        <a href="mailto:info@yardpilot.net" className="text-emerald-600 underline">
+          info@yardpilot.net
         </a>.
       </p>
       <Link
