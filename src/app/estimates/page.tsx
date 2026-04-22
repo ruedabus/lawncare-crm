@@ -3,11 +3,26 @@ import { createClient } from "../../lib/supabase/server";
 import { AppShell } from "../../components/layout/app-shell";
 import { EstimatesList } from "../../components/estimates/estimates-list";
 import { CreateEstimateForm } from "../../components/estimates/create-estimate-form";
+import { getUserPlanInfo } from "../../lib/plan-guard";
+import { UpgradeWall } from "../../components/plan/upgrade-wall";
 
 export default async function EstimatesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { config, planName } = await getUserPlanInfo();
+  if (!config.estimates) {
+    return (
+      <AppShell title="Estimates">
+        <UpgradeWall
+          feature="Estimates"
+          description="Create and send professional quotes to customers before converting them into jobs. Available on Pro and Premier plans."
+          currentPlan={planName}
+        />
+      </AppShell>
+    );
+  }
 
   const [{ data: estimatesRaw }, { data: customers }] = await Promise.all([
     supabase

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import { AppShell } from "../../components/layout/app-shell";
+import { getUserPlanInfo } from "../../lib/plan-guard";
+import { UpgradeWall } from "../../components/plan/upgrade-wall";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,6 +101,19 @@ export default async function ReportsPage() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  const { config, planName } = await getUserPlanInfo();
+  if (!config.reports) {
+    return (
+      <AppShell title="Reports">
+        <UpgradeWall
+          feature="Reports"
+          description="Get detailed revenue breakdowns, job completion rates, and top customer insights. Available on Pro and Premier plans."
+          currentPlan={planName}
+        />
+      </AppShell>
+    );
   }
 
   // ── Fetch data ──────────────────────────────────────────────────────────

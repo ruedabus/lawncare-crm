@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../lib/supabase/server";
+import { checkFeatureAccess } from "../../../lib/plan-guard";
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const featureError = await checkFeatureAccess("estimates");
+    if (featureError) return NextResponse.json({ error: featureError }, { status: 403 });
 
     const body = await request.json();
     const { customer_id, title, description, line_items, valid_until, notes } = body;
