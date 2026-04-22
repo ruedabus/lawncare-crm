@@ -13,7 +13,6 @@ type Settings = {
   service_state?: string;
   service_lat?: number;
   service_lon?: number;
-  service_zip?: string;
   notify_new_job?: boolean;
   notify_unpaid_invoice?: boolean;
   notify_upcoming_task?: boolean;
@@ -336,7 +335,7 @@ function AccountTab({ user }: { user: UserInfo }) {
 // ── Service Location ─────────────────────────────────────────────────────────
 
 function ServiceLocationTab({ settings }: { settings: Settings }) {
-  const [zip, setZip] = useState(settings.service_zip ?? "");
+  const [zip, setZip] = useState("");
   const [resolved, setResolved] = useState<{ city: string; state: string } | null>(
     settings.service_city ? { city: settings.service_city, state: settings.service_state ?? "" } : null
   );
@@ -345,7 +344,6 @@ function ServiceLocationTab({ settings }: { settings: Settings }) {
     service_state: settings.service_state ?? "",
     service_lat: settings.service_lat ?? null,
     service_lon: settings.service_lon ?? null,
-    service_zip: settings.service_zip ?? "",
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error" | "looking">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -365,7 +363,7 @@ function ServiceLocationTab({ settings }: { settings: Settings }) {
       const lat = parseFloat(parseFloat(place.latitude).toFixed(4));
       const lon = parseFloat(parseFloat(place.longitude).toFixed(4));
       setResolved({ city, state });
-      setForm((f) => ({ ...f, service_city: city, service_state: state, service_lat: lat, service_lon: lon, service_zip: value }));
+      setForm((f) => ({ ...f, service_city: city, service_state: state, service_lat: lat, service_lon: lon }));
       setStatus("idle");
     } catch {
       setResolved(null);
