@@ -49,7 +49,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/demo") ||
     pathname.startsWith("/screenshots") ||
     pathname.startsWith("/terms") ||
-    pathname.startsWith("/privacy");
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/trial-success");
 
   // 🚫 Not logged in → redirect to login
   if (!user && !isPublicRoute) {
