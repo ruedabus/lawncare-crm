@@ -98,8 +98,17 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: inviteError.message }, { status: 500 });
       }
 
+      // If user already exists, look them up by email
+      let userId = inviteData?.user?.id;
+      if (!userId) {
+        const { data: existingUsers } = await supabase.auth.admin.listUsers();
+        const existing = existingUsers?.users?.find(
+          (u) => u.email?.toLowerCase() === customerEmail.toLowerCase()
+        );
+        userId = existing?.id;
+      }
+
       // Upsert settings row with subscription details
-      const userId = inviteData?.user?.id;
       if (userId) {
         await supabase.from("settings").upsert(
           {
