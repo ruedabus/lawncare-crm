@@ -13,6 +13,7 @@ type Settings = {
   service_state?: string;
   service_lat?: number;
   service_lon?: number;
+  service_zip?: string;
   notify_new_job?: boolean;
   notify_unpaid_invoice?: boolean;
   notify_upcoming_task?: boolean;
@@ -335,45 +336,47 @@ function AccountTab({ user }: { user: UserInfo }) {
 // ── Service Location ─────────────────────────────────────────────────────────
 
 function ServiceLocationTab({ settings }: { settings: Settings }) {
+  const [zip, setZip] = useState(settings.service_zip ?? "");
+  const [resolved, setResolved] = useState<{ city: string; state: string } | null>(
+    settings.service_city ? { city: settings.service_city, state: settings.service_state ?? "" } : null
+  );
   const [form, setForm] = useState({
-    service_city: settings.service_city ?? "Brooksville",
-    service_state: settings.service_state ?? "FL",
-    service_lat: settings.service_lat ?? 28.5553,
-    service_lon: settings.service_lon ?? -82.3882,
+    service_city: settings.service_city ?? "",
+    service_state: settings.service_state ?? "",
+    service_lat: settings.service_lat ?? null,
+    service_lon: settings.service_lon ?? null,
+    service_zip: settings.service_zip ?? "",
   });
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error" | "geocoding">("idle");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error" | "looking">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  async function geocode() {
-    if (!form.service_city || !form.service_state) return;
-    setStatus("geocoding");
+  async function lookupZip(value: string) {
+    if (value.length !== 5) return;
+    setStatus("looking");
+    setErrorMsg("");
     try {
-      const res = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-          form.service_city + " " + form.service_state
-        )}&count=1&language=en&format=json`
-      );
+      const res = await fetch(`https://api.zippopotam.us/us/${value}`);
+      if (!res.ok) throw new Error("not found");
       const data = await res.json();
-      const result = data?.results?.[0];
-      if (result) {
-        setForm((f) => ({
-          ...f,
-          service_lat: parseFloat(result.latitude.toFixed(4)),
-          service_lon: parseFloat(result.longitude.toFixed(4)),
-        }));
-        setStatus("idle");
-      } else {
-        setErrorMsg("City not found. Enter coordinates manually.");
-        setStatus("error");
-      }
+      const place = data.places?.[0];
+      if (!place) throw new Error("not found");
+      const city = place["place name"];
+      const state = place["state abbreviation"];
+      const lat = parseFloat(parseFloat(place.latitude).toFixed(4));
+      const lon = parseFloat(parseFloat(place.longitude).toFixed(4));
+      setResolved({ city, state });
+      setForm((f) => ({ ...f, service_city: city, service_state: state, service_lat: lat, service_lon: lon, service_zip: value }));
+      setStatus("idle");
     } catch {
-      setErrorMsg("Geocode failed. Enter coordinates manually.");
+      setResolved(null);
+      setErrorMsg("Zip code not found. Please check and try again.");
       setStatus("error");
     }
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!resolved) { setErrorMsg("Please enter a valid zip code first."); setStatus("error"); return; }
     setStatus("saving");
     try {
       const res = await fetch("/api/settings", {
@@ -399,73 +402,39 @@ function ServiceLocationTab({ settings }: { settings: Settings }) {
       description="Used for weather on the dashboard and future route planning."
     >
       <form onSubmit={handleSave} className="space-y-5">
-        <div className="grid gap-5 sm:grid-cols-3">
-          <div className="sm:col-span-2">
-            <Field label="City">
-              <input
-                type="text"
-                value={form.service_city}
-                onChange={(e) => setForm({ ...form, service_city: e.target.value })}
-                placeholder="Brooksville"
-                className={inputCls}
-              />
-            </Field>
-          </div>
-          <Field label="State">
-            <input
-              type="text"
-              value={form.service_state}
-              onChange={(e) => setForm({ ...form, service_state: e.target.value })}
-              placeholder="FL"
-              maxLength={2}
-              className={inputCls}
-            />
-          </Field>
-        </div>
+        <Field label="Zip Code">
+          <input
+            type="text"
+            value={zip}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+              setZip(val);
+              setResolved(null);
+              setErrorMsg("");
+              setStatus("idle");
+              if (val.length === 5) lookupZip(val);
+            }}
+            placeholder="e.g. 34609"
+            maxLength={5}
+            className={inputCls}
+          />
+        </Field>
 
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <Field label="Latitude">
-              <input
-                type="number"
-                step="0.0001"
-                value={form.service_lat}
-                onChange={(e) =>
-                  setForm({ ...form, service_lat: parseFloat(e.target.value) })
-                }
-                className={inputCls}
-              />
-            </Field>
-          </div>
-          <div className="flex-1">
-            <Field label="Longitude">
-              <input
-                type="number"
-                step="0.0001"
-                value={form.service_lon}
-                onChange={(e) =>
-                  setForm({ ...form, service_lon: parseFloat(e.target.value) })
-                }
-                className={inputCls}
-              />
-            </Field>
-          </div>
-          <button
-            type="button"
-            onClick={geocode}
-            disabled={status === "geocoding"}
-            className="mb-0.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
-          >
-            {status === "geocoding" ? "Looking up…" : "Auto-fill coords"}
-          </button>
-        </div>
+        {status === "looking" && (
+          <p className="text-sm text-slate-400">Looking up zip code…</p>
+        )}
 
-        <p className="text-xs text-slate-400">
-          Type your city &amp; state, click "Auto-fill coords" to look them up automatically, then save.
-        </p>
+        {resolved && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            {resolved.city}, {resolved.state}
+          </div>
+        )}
 
         <SaveRow
-          status={status === "geocoding" ? "idle" : status}
+          status={status === "looking" ? "idle" : status}
           errorMsg={errorMsg}
         />
       </form>
