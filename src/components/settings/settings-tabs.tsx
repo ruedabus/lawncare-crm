@@ -19,6 +19,12 @@ type Settings = {
   notify_new_lead?: boolean;
   lead_capture_slug?: string;
   stripe_account_id?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  subscription_status?: string | null;
+  plan_name?: string | null;
+  trial_ends_at?: string | null;
+  current_period_end?: string | null;
 };
 
 type UserInfo = {
@@ -27,7 +33,7 @@ type UserInfo = {
   name: string;
 };
 
-type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications" | "payments";
+type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications" | "payments" | "billing";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "business", label: "Business Profile" },
@@ -37,6 +43,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "location", label: "Service Location" },
   { id: "notifications", label: "Notifications" },
   { id: "payments", label: "Payments" },
+  { id: "billing", label: "Billing" },
 ];
 
 export function SettingsTabs({
@@ -91,6 +98,9 @@ export function SettingsTabs({
       )}
       {activeTab === "payments" && (
         <PaymentsTab stripeAccountId={settings.stripe_account_id ?? null} />
+      )}
+      {activeTab === "billing" && (
+        <BillingTab settings={settings} />
       )}
     </div>
   );
@@ -1204,6 +1214,114 @@ function PaymentsTab({ stripeAccountId }: { stripeAccountId: string | null }) {
             </svg>
             Connect with Stripe
           </a>
+        </div>
+      )}
+    </SettingsCard>
+  );
+}
+
+// ── Billing ───────────────────────────────────────────────────────────────────
+
+const PLAN_LABELS: Record<string, string> = {
+  basic: "Basic — $29.99/mo",
+  pro: "Pro — $39.99/mo",
+  premier: "Premier — $59.99/mo",
+};
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  trialing:  { label: "Free trial",   color: "text-blue-700 bg-blue-50 border-blue-200" },
+  active:    { label: "Active",       color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  past_due:  { label: "Past due",     color: "text-amber-700 bg-amber-50 border-amber-200" },
+  canceled:  { label: "Cancelled",    color: "text-slate-600 bg-slate-100 border-slate-200" },
+  unpaid:    { label: "Unpaid",       color: "text-red-700 bg-red-50 border-red-200" },
+};
+
+function BillingTab({ settings }: { settings: Settings }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const status = settings.subscription_status ?? null;
+  const statusInfo = status ? STATUS_LABELS[status] ?? { label: status, color: "text-slate-600 bg-slate-100 border-slate-200" } : null;
+  const planLabel = settings.plan_name ? PLAN_LABELS[settings.plan_name] ?? settings.plan_name : null;
+
+  const trialEnd = settings.trial_ends_at ? new Date(settings.trial_ends_at) : null;
+  const periodEnd = settings.current_period_end ? new Date(settings.current_period_end) : null;
+
+  async function openBillingPortal() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/stripe/billing-portal", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to open billing portal");
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <SettingsCard title="Billing & Subscription" description="Manage your YardPilot plan, payment method, and billing history.">
+      {!status ? (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">No active subscription found. Start a free trial to get access to YardPilot.</p>
+          <a
+            href="/start-trial"
+            className="inline-flex items-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+          >
+            Start free trial
+          </a>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Status badge */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${statusInfo?.color}`}>
+              {statusInfo?.label}
+            </span>
+            {planLabel && (
+              <span className="text-sm font-semibold text-slate-800">{planLabel}</span>
+            )}
+          </div>
+
+          {/* Trial / renewal info */}
+          {status === "trialing" && trialEnd && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              Your free trial ends on <strong>{trialEnd.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</strong>. Your card will be charged automatically after that.
+            </div>
+          )}
+          {status === "active" && periodEnd && (
+            <p className="text-sm text-slate-600">
+              Next billing date: <strong>{periodEnd.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</strong>
+            </p>
+          )}
+          {status === "past_due" && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Your last payment failed. Please update your payment method to keep access.
+            </div>
+          )}
+          {status === "canceled" && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              Your subscription has been cancelled. You can resubscribe at any time.
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+
+          <button
+            onClick={openBillingPortal}
+            disabled={loading}
+            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
+          >
+            {loading ? "Opening portal..." : "Manage billing & payment method"}
+          </button>
+
+          <p className="text-xs text-slate-400">
+            You&apos;ll be redirected to Stripe&apos;s secure billing portal to update your card, change plans, or cancel.
+          </p>
         </div>
       )}
     </SettingsCard>

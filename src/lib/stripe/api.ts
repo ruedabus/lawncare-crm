@@ -185,3 +185,87 @@ export async function verifyWebhookSignature(
     return false;
   }
 }
+
+// ── Subscription helpers ──────────────────────────────────────────────────────
+
+export type SubscriptionCheckoutParams = {
+  priceId: string;
+  customerEmail: string;
+  trialDays: number;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: Record<string, string>;
+};
+
+/** Create a Stripe Checkout Session for a subscription with a free trial */
+export async function createSubscriptionCheckoutSession(
+  params: SubscriptionCheckoutParams
+): Promise<CheckoutSession> {
+  const body = encode({
+    mode: "subscription",
+    "line_items[0][price]": params.priceId,
+    "line_items[0][quantity]": 1,
+    customer_email: params.customerEmail,
+    "subscription_data[trial_period_days]": params.trialDays,
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    // Collect payment method upfront even during trial
+    "payment_method_collection": "always",
+    ...(params.metadata
+      ? Object.fromEntries(
+          Object.entries(params.metadata).map(([k, v]) => [`metadata[${k}]`, v])
+        )
+      : {}),
+  });
+
+  const res = await fetch(`${STRIPE_API}/checkout/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { error?: { message?: string } })?.error?.message ??
+        "Stripe subscription checkout failed"
+    );
+  }
+
+  const data = await res.json();
+  return { id: data.id, url: data.url };
+}
+
+/** Create a Stripe Billing Portal session so the user can manage their subscription */
+export async function createBillingPortalSession(
+  customerId: string,
+  returnUrl: string
+): Promise<{ url: string }> {
+  const body = new URLSearchParams({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+
+  const res = await fetch(`${STRIPE_API}/billing_portal/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { error?: { message?: string } })?.error?.message ??
+        "Billing portal session failed"
+    );
+  }
+
+  const data = await res.json();
+  return { url: data.url };
+}
