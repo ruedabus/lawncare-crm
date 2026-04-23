@@ -4,6 +4,7 @@ import { sendEmail } from "../../../../../lib/email/send";
 import { buildInvoiceEmailData } from "../../../../../lib/email/invoice-email-data";
 import { invoiceCreatedEmail } from "../../../../../lib/email/templates";
 import { createCheckoutSession } from "../../../../../lib/stripe/api";
+import { upsertPortalToken } from "../../../../../lib/portal-token";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -34,11 +35,27 @@ export async function POST(_: Request, context: RouteContext) {
       );
     }
 
+    // Generate a portal magic link for the customer
+    let portalUrl: string | undefined;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+    try {
+      const { data: invoiceRow } = await supabase
+        .from("invoices")
+        .select("customer_id")
+        .eq("id", id)
+        .single();
+      if (invoiceRow?.customer_id) {
+        const token = await upsertPortalToken(invoiceRow.customer_id, user.id);
+        portalUrl = `${appUrl}/portal/${token}`;
+      }
+    } catch {
+      // Non-fatal — email sends without portal link if token generation fails
+    }
+
     // Generate a Stripe checkout URL to embed directly in the email
     let payUrl: string | undefined;
     if (process.env.STRIPE_SECRET_KEY && emailData.amount > 0) {
       try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
         const session = await createCheckoutSession({
           invoiceId: id,
           invoiceNumber: emailData.invoiceNumber,
@@ -59,7 +76,7 @@ export async function POST(_: Request, context: RouteContext) {
       to: emailData.customerEmail,
       fromName: emailData.businessName,
       subject: `Invoice ${emailData.invoiceNumber} from ${emailData.businessName}`,
-      html: invoiceCreatedEmail({ ...emailData, payUrl }),
+      html: invoiceCreatedEmail({ ...emailData, payUrl, portalUrl }),
       replyTo: emailData.businessEmail || undefined,
     });
 

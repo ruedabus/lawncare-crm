@@ -16,7 +16,8 @@ export type InvoiceEmailData = {
   businessPhone?: string;
   businessWebsite?: string;
   appUrl?: string;
-  payUrl?: string; // Stripe checkout URL — embedded directly in email
+  payUrl?: string;    // Stripe checkout URL — embedded directly in email
+  portalUrl?: string; // Customer portal magic link
 };
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -114,6 +115,13 @@ export function invoiceCreatedEmail(d: InvoiceEmailData): string {
                 </a>
                </td>`
             : ""}
+          ${d.portalUrl
+            ? `<td style="padding-right:12px;">
+                <a href="${d.portalUrl}" style="display:inline-block;background:#0f172a;color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;">
+                  View My Portal
+                </a>
+               </td>`
+            : ""}
           ${printUrl
             ? `<td>
                 <a href="${printUrl}" style="display:inline-block;background:#f1f5f9;color:#334155;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;border:1px solid #e2e8f0;">
@@ -182,15 +190,31 @@ export function invoiceReminderEmail(
       </table>
     </td></tr>
 
-    ${
-      printUrl
-        ? `<tr><td style="padding:0 32px 32px;">
-            <a href="${printUrl}" style="display:inline-block;background:${accentColor};color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;">
-              View Invoice
-            </a>
-           </td></tr>`
-        : ""
-    }
+    <tr><td style="padding:0 32px 32px;">
+      <table cellpadding="0" cellspacing="0"><tr>
+        ${d.payUrl
+          ? `<td style="padding-right:12px;">
+              <a href="${d.payUrl}" style="display:inline-block;background:${accentColor};color:#fff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;text-decoration:none;">
+                Pay Now
+              </a>
+             </td>`
+          : ""}
+        ${d.portalUrl
+          ? `<td style="padding-right:12px;">
+              <a href="${d.portalUrl}" style="display:inline-block;background:#0f172a;color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;">
+                View My Portal
+              </a>
+             </td>`
+          : ""}
+        ${printUrl
+          ? `<td>
+              <a href="${printUrl}" style="display:inline-block;background:#f1f5f9;color:#334155;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;border:1px solid #e2e8f0;">
+                View Invoice
+              </a>
+             </td>`
+          : ""}
+      </tr></table>
+    </td></tr>
 
     <tr><td style="padding:0 32px 32px;font-size:13px;color:#64748b;">
       <p style="margin:0;">Questions? Contact us at

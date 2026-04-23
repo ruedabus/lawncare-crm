@@ -7,6 +7,7 @@ import { CreateJobForm } from "../../../components/jobs/create-job-form";
 import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-form";
 import InvoiceActions from "../../../components/invoices/invoice-actions";
 import { EditCustomerForm } from "../../../components/customers/edit-customer-form";
+import { SendPortalLinkButton } from "../../../components/customers/send-portal-link-button";
 import { redirect } from "next/navigation";
 
 type CustomerDetailsPageProps = {
@@ -245,6 +246,19 @@ if (!user) {
                 Create Invoice
               </h2>
               <CreateInvoiceForm customerId={customer.id} jobs={jobOptions} />
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+                Customer Portal
+              </h2>
+              <p className="mb-4 text-sm text-neutral-500">
+                Send your customer a personal portal link where they can view invoices, service history, and request new services.
+              </p>
+              <SendPortalLinkButton
+                customerId={customer.id}
+                customerEmail={customer.email}
+              />
             </div>
 
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
