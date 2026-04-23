@@ -8,6 +8,7 @@ import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-f
 import InvoiceActions from "../../../components/invoices/invoice-actions";
 import { EditCustomerForm } from "../../../components/customers/edit-customer-form";
 import { SendPortalLinkButton } from "../../../components/customers/send-portal-link-button";
+import { RecurringPlanCard } from "../../../components/customers/recurring-plan-card";
 import { redirect } from "next/navigation";
 
 type CustomerDetailsPageProps = {
@@ -247,6 +248,11 @@ if (!user) {
               </h2>
               <CreateInvoiceForm customerId={customer.id} jobs={jobOptions} />
             </div>
+
+            <RecurringPlanCard
+              customerId={customer.id}
+              customerEmail={customer.email}
+            />
 
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900">

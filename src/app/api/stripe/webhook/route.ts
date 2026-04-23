@@ -74,55 +74,152 @@ export async function POST(request: Request) {
     }
 
     if (mode === "subscription") {
-      // New subscription — auto-invite the user
-      const customerEmail = session.customer_email as string;
-      const customerId = session.customer as string;
-      const subscriptionId = session.subscription as string;
       const metadata = (session.metadata as Record<string, string>) ?? {};
-      const planName = metadata.plan_name ?? "basic";
-      const fullName = metadata.full_name ?? "";
-      const businessName = metadata.business_name ?? "";
+      const crmCustomerId = metadata.crm_customer_id;
 
-      if (!customerEmail) {
-        return NextResponse.json({ received: true });
-      }
-
-      // Invite user via Supabase (creates account + sends set-password email)
-      const { data: inviteData, error: inviteError } =
-        await supabase.auth.admin.inviteUserByEmail(customerEmail, {
-          data: { full_name: fullName },
-        });
-
-      if (inviteError && !inviteError.message.includes("already registered")) {
-        console.error("Webhook: failed to invite user", inviteError);
-        return NextResponse.json({ error: inviteError.message }, { status: 500 });
-      }
-
-      // If user already exists, look them up by email
-      let userId = inviteData?.user?.id;
-      if (!userId) {
-        const { data: existingUsers } = await supabase.auth.admin.listUsers();
-        const existing = existingUsers?.users?.find(
-          (u) => u.email?.toLowerCase() === customerEmail.toLowerCase()
-        );
-        userId = existing?.id;
-      }
-
-      // Upsert settings row with subscription details
-      if (userId) {
-        await supabase.from("settings").upsert(
-          {
-            user_id: userId,
-            business_name: businessName || null,
-            stripe_customer_id: customerId,
+      if (crmCustomerId) {
+        // ── Customer recurring plan checkout completed — activate it ──
+        const subscriptionId = session.subscription as string;
+        await supabase
+          .from("recurring_plans")
+          .update({
+            status: "active",
             stripe_subscription_id: subscriptionId,
-            subscription_status: "trialing",
-            plan_name: planName,
+            stripe_customer_id: session.customer as string,
             updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
+          })
+          .eq("stripe_checkout_session_id", session.id as string);
+      } else {
+        // ── YardPilot operator plan signup — auto-invite the user ──
+        const customerEmail = session.customer_email as string;
+        const customerId = session.customer as string;
+        const subscriptionId = session.subscription as string;
+        const planName = metadata.plan_name ?? "basic";
+        const fullName = metadata.full_name ?? "";
+        const businessName = metadata.business_name ?? "";
+
+        if (!customerEmail) {
+          return NextResponse.json({ received: true });
+        }
+
+        const { data: inviteData, error: inviteError } =
+          await supabase.auth.admin.inviteUserByEmail(customerEmail, {
+            data: { full_name: fullName },
+          });
+
+        if (inviteError && !inviteError.message.includes("already registered")) {
+          console.error("Webhook: failed to invite user", inviteError);
+          return NextResponse.json({ error: inviteError.message }, { status: 500 });
+        }
+
+        let userId = inviteData?.user?.id;
+        if (!userId) {
+          const { data: existingUsers } = await supabase.auth.admin.listUsers();
+          const existing = existingUsers?.users?.find(
+            (u) => u.email?.toLowerCase() === customerEmail.toLowerCase()
+          );
+          userId = existing?.id;
+        }
+
+        if (userId) {
+          await supabase.from("settings").upsert(
+            {
+              user_id: userId,
+              business_name: businessName || null,
+              stripe_customer_id: customerId,
+              stripe_subscription_id: subscriptionId,
+              subscription_status: "trialing",
+              plan_name: planName,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id" }
+          );
+        }
       }
+    }
+  }
+
+  // ── Recurring plan payment succeeded → auto-create invoice ────────────────
+  if (event.type === "invoice.paid") {
+    const inv = event.data.object;
+    const subscriptionId = inv.subscription as string | null;
+    const billingReason = inv.billing_reason as string | null;
+
+    // Only handle subscription invoices (not the first setup invoice if $0)
+    if (subscriptionId && billingReason === "subscription_cycle") {
+      const amountPaid = inv.amount_paid as number; // in cents
+      if (amountPaid > 0) {
+        // Look up our recurring plan by subscription ID
+        const { data: planRow } = await supabase
+          .from("recurring_plans")
+          .select("id, user_id, customer_id, plan_name, amount_cents")
+          .eq("stripe_subscription_id", subscriptionId)
+          .maybeSingle();
+
+        if (planRow) {
+          // Keep plan status current
+          const periodEnd = (inv.period_end as number | null);
+          await supabase
+            .from("recurring_plans")
+            .update({
+              status: "active",
+              next_billing_date: periodEnd
+                ? new Date(periodEnd * 1000).toISOString()
+                : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", planRow.id);
+
+          // Auto-create a paid invoice in the CRM
+          const now = new Date();
+          const { data: newInvoice } = await supabase
+            .from("invoices")
+            .insert({
+              user_id: planRow.user_id,
+              customer_id: planRow.customer_id,
+              title: planRow.plan_name,
+              amount: planRow.amount_cents / 100,
+              status: "paid",
+              paid_at: now.toISOString(),
+              created_at: now.toISOString(),
+              source: "recurring",
+              notes: `Auto-generated from recurring plan · Stripe subscription ${subscriptionId}`,
+            })
+            .select()
+            .single();
+
+          // Send paid confirmation email to customer
+          if (newInvoice) {
+            buildInvoiceEmailData(supabase, newInvoice.id, planRow.user_id)
+              .then(async (emailData) => {
+                if (!emailData?.customerEmail) return;
+                const html = invoicePaidEmail(emailData);
+                await sendEmail({
+                  to: emailData.customerEmail,
+                  subject: `Payment received — ${emailData.invoiceNumber}`,
+                  html,
+                  fromName: emailData.businessName,
+                  replyTo: emailData.businessEmail || undefined,
+                });
+              })
+              .catch((err) => console.error("Recurring invoice email error:", err));
+          }
+        }
+      }
+    }
+
+    // Mark plan past_due if subscription invoice fails (handled below)
+  }
+
+  // ── Recurring plan payment failed ─────────────────────────────────────────
+  if (event.type === "invoice.payment_failed") {
+    const inv = event.data.object;
+    const subscriptionId = inv.subscription as string | null;
+    if (subscriptionId) {
+      await supabase
+        .from("recurring_plans")
+        .update({ status: "past_due", updated_at: new Date().toISOString() })
+        .eq("stripe_subscription_id", subscriptionId);
     }
   }
 

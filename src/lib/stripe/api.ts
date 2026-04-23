@@ -242,6 +242,105 @@ export async function createSubscriptionCheckoutSession(
   return { id: data.id, url: data.url };
 }
 
+// ── Recurring plan (customer subscription) ───────────────────────────────────
+
+export type RecurringPlanCheckoutParams = {
+  planName: string;
+  amountCents: number;
+  interval: "month" | "week" | "year";
+  customerEmail: string;
+  customerName?: string;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: Record<string, string>;
+  /** Connected Stripe account — funds route here */
+  connectedAccountId?: string;
+  platformFeePercent?: number;
+};
+
+/** Create a Stripe Checkout Session (subscription mode) for a recurring customer plan.
+ *  Uses destination charges so the subscription lives on the platform account
+ *  and webhook events arrive at the platform webhook endpoint. */
+export async function createRecurringPlanCheckoutSession(
+  params: RecurringPlanCheckoutParams
+): Promise<CheckoutSession> {
+  const feePercent = params.platformFeePercent ?? 0;
+
+  const body = encode({
+    mode: "subscription",
+    "line_items[0][price_data][currency]": "usd",
+    "line_items[0][price_data][product_data][name]": params.planName,
+    "line_items[0][price_data][recurring][interval]": params.interval,
+    "line_items[0][price_data][unit_amount]": params.amountCents,
+    "line_items[0][quantity]": 1,
+    customer_email: params.customerEmail,
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    // Destination charge — funds flow to connected account after platform fee
+    ...(params.connectedAccountId
+      ? {
+          "subscription_data[transfer_data][destination]": params.connectedAccountId,
+          ...(feePercent > 0
+            ? { "subscription_data[application_fee_percent]": feePercent }
+            : {}),
+        }
+      : {}),
+    ...(params.metadata
+      ? Object.fromEntries(
+          Object.entries(params.metadata).map(([k, v]) => [`metadata[${k}]`, v])
+        )
+      : {}),
+    ...(params.metadata
+      ? Object.fromEntries(
+          Object.entries(params.metadata).map(([k, v]) => [
+            `subscription_data[metadata][${k}]`,
+            v,
+          ])
+        )
+      : {}),
+  });
+
+  const res = await fetch(`${STRIPE_API}/checkout/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { error?: { message?: string } })?.error?.message ??
+        "Recurring plan checkout failed"
+    );
+  }
+
+  const data = await res.json();
+  return { id: data.id, url: data.url };
+}
+
+/** Cancel a Stripe Subscription */
+export async function cancelStripeSubscription(
+  subscriptionId: string
+): Promise<void> {
+  const res = await fetch(`${STRIPE_API}/subscriptions/${subscriptionId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: authHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { error?: { message?: string } })?.error?.message ??
+        "Failed to cancel subscription"
+    );
+  }
+}
+
 /** Create a Stripe Billing Portal session so the user can manage their subscription */
 export async function createBillingPortalSession(
   customerId: string,
