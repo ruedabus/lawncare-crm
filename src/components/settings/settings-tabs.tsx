@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
+import { TeamTab } from "./team-tab";
 
 type Settings = {
   business_name?: string;
@@ -33,9 +34,9 @@ type UserInfo = {
   name: string;
 };
 
-type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications" | "payments" | "billing";
+type Tab = "business" | "account" | "security" | "qrcode" | "location" | "notifications" | "payments" | "billing" | "team";
 
-const TABS: { id: Tab; label: string }[] = [
+const OWNER_TABS: { id: Tab; label: string }[] = [
   { id: "business", label: "Business Profile" },
   { id: "account", label: "Account" },
   { id: "security", label: "Security" },
@@ -44,17 +45,29 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "notifications", label: "Notifications" },
   { id: "payments", label: "Payments" },
   { id: "billing", label: "Billing" },
+  { id: "team", label: "Team" },
+];
+
+// Tabs available to non-owner team members (admin)
+const MEMBER_TABS: { id: Tab; label: string }[] = [
+  { id: "business", label: "Business Profile" },
+  { id: "account", label: "Account" },
+  { id: "security", label: "Security" },
+  { id: "notifications", label: "Notifications" },
 ];
 
 export function SettingsTabs({
   user,
   settings: initialSettings,
+  isOwner = true,
 }: {
   user: UserInfo;
   settings: Settings | null;
+  isOwner?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("business");
   const settings = initialSettings ?? {};
+  const TABS = isOwner ? OWNER_TABS : MEMBER_TABS;
 
   return (
     <div className="space-y-6">
@@ -101,6 +114,9 @@ export function SettingsTabs({
       )}
       {activeTab === "billing" && (
         <BillingTab settings={settings} />
+      )}
+      {activeTab === "team" && isOwner && (
+        <TeamTab />
       )}
     </div>
   );

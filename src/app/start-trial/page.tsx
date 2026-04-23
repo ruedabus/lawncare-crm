@@ -17,6 +17,7 @@ const PLANS = [
       "Job scheduling",
       "QR lead capture",
       "Mobile-ready access",
+      "1 user (owner only)",
       "Email support",
     ],
     highlight: false,
@@ -30,6 +31,7 @@ const PLANS = [
     features: [
       "Up to 100 customers",
       "Everything in Basic",
+      "Up to 3 users (owner + 2 team)",
       "Multiple technicians",
       "Lead source tracking",
       "Daily tech reminders",
@@ -46,6 +48,7 @@ const PLANS = [
     features: [
       "Unlimited customers",
       "Everything in Pro",
+      "Unlimited team users",
       "Advanced reporting",
       "Multiple QR codes",
       "Priority support",

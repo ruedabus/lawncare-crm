@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { AppShell } from "../../components/layout/app-shell";
 import { WeekSchedule } from "../../components/schedule/week-schedule";
 
@@ -36,6 +37,7 @@ export default async function SchedulePage({
   if (!user) {
     redirect("/login");
   }
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const params = await searchParams;
   const selectedDate = params?.date
@@ -69,7 +71,7 @@ export default async function SchedulePage({
           customers(name)
         `
       )
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .gte("scheduled_start", weekStart.toISOString())
       .lt("scheduled_start", weekEnd.toISOString())
       .order("scheduled_start", { ascending: true }),
@@ -77,14 +79,14 @@ export default async function SchedulePage({
     supabase
       .from("technicians")
       .select("id, name, color, is_active")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .eq("is_active", true)
       .order("name", { ascending: true }),
 
     supabase
       .from("customers")
       .select("id, name")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .order("name", { ascending: true }),
 
     supabase
@@ -101,7 +103,7 @@ export default async function SchedulePage({
           assigned_to
         `
       )
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .not("scheduled_start", "is", null)
       .gte("scheduled_start", weekStart.toISOString())
       .lt("scheduled_start", weekEnd.toISOString())

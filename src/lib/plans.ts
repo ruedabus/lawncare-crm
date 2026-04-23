@@ -4,8 +4,9 @@
 export type PlanName = "basic" | "pro" | "premier";
 
 export interface PlanConfig {
-  customerLimit: number | null;   // null = unlimited
-  technicianLimit: number | null; // null = unlimited
+  customerLimit: number | null;    // null = unlimited
+  technicianLimit: number | null;  // null = unlimited
+  teamMemberLimit: number | null;  // additional logins beyond the owner; null = unlimited
   estimates: boolean;
   reports: boolean;
   multipleQrCodes: boolean;
@@ -16,6 +17,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
   basic: {
     customerLimit: 50,
     technicianLimit: 1,
+    teamMemberLimit: 0,   // owner only — no additional logins
     estimates: false,
     reports: false,
     multipleQrCodes: false,
@@ -24,6 +26,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
   pro: {
     customerLimit: 100,
     technicianLimit: 3,
+    teamMemberLimit: 2,   // owner + 2 team members (3 total)
     estimates: true,
     reports: true,
     multipleQrCodes: true,
@@ -32,6 +35,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
   premier: {
     customerLimit: null,
     technicianLimit: null,
+    teamMemberLimit: null, // unlimited
     estimates: true,
     reports: true,
     multipleQrCodes: true,

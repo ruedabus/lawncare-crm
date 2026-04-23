@@ -5,6 +5,7 @@ import { buildInvoiceEmailData } from "../../../../../lib/email/invoice-email-da
 import { invoiceCreatedEmail } from "../../../../../lib/email/templates";
 import { createCheckoutSession } from "../../../../../lib/stripe/api";
 import { upsertPortalToken } from "../../../../../lib/portal-token";
+import { getTeamContext } from "../../../../../lib/team";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,8 +23,9 @@ export async function POST(_: Request, context: RouteContext) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { ownerId } = await getTeamContext(supabase, user.id);
 
-    const emailData = await buildInvoiceEmailData(supabase, id, user.id);
+    const emailData = await buildInvoiceEmailData(supabase, id, ownerId);
 
     if (!emailData) {
       return NextResponse.json(
@@ -45,7 +47,7 @@ export async function POST(_: Request, context: RouteContext) {
         .eq("id", id)
         .single();
       if (invoiceRow?.customer_id) {
-        const token = await upsertPortalToken(invoiceRow.customer_id, user.id);
+        const token = await upsertPortalToken(invoiceRow.customer_id, ownerId);
         portalUrl = `${appUrl}/portal/${token}`;
       }
     } catch {

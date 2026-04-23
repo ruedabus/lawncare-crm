@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
 import { createBillingPortalSession } from "../../../../lib/stripe/api";
+import { getTeamContext, canAccessBilling } from "../../../../lib/team";
 
 export async function POST() {
   const supabase = await createClient();
@@ -9,11 +10,15 @@ export async function POST() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const teamCtx = await getTeamContext(supabase, user.id);
+  if (!canAccessBilling(teamCtx)) {
+    return NextResponse.json({ error: "Only the account owner can access billing." }, { status: 403 });
+  }
 
   const { data: settings } = await supabase
     .from("settings")
     .select("stripe_customer_id")
-    .eq("user_id", user.id)
+    .eq("user_id", teamCtx.ownerId)
     .maybeSingle();
 
   const customerId = settings?.stripe_customer_id;

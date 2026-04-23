@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { AppShell } from "../../components/layout/app-shell";
 
 // ── Weather helpers ──────────────────────────────────────────────────────────
@@ -201,6 +202,7 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/login");
   }
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   // ── Real stats ──────────────────────────────────────────────────────────
   const sixMonthsAgo = new Date();
@@ -338,7 +340,7 @@ export default async function DashboardPage() {
   const { data: locationSettings } = await supabase
     .from("settings")
     .select("service_city, service_state, service_lat, service_lon")
-    .eq("user_id", user.id)
+    .eq("user_id", ownerId)
     .maybeSingle();
 
   const weatherLat = locationSettings?.service_lat ?? 28.5553;

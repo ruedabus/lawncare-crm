@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
+import { getTeamContext } from "../../../../lib/team";
 import { PrintTrigger, PrintButton } from "../../../../components/print/print-trigger";
 
 type Params = Promise<{ id: string }>;
@@ -12,6 +13,7 @@ export default async function InvoicePrintPage({ params }: { params: Params }) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   // Fetch invoice + customer in parallel
   const [{ data: invoice }, { data: settings }] = await Promise.all([
@@ -25,7 +27,7 @@ export default async function InvoicePrintPage({ params }: { params: Params }) {
       .select(
         "business_name, business_address, business_phone, business_email, business_website"
       )
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .maybeSingle(),
   ]);
 

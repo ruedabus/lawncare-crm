@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
+import { getTeamContext, canWrite } from "../../../../lib/team";
 
 type RouteContext = {
   params: Promise<{
@@ -28,6 +29,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const teamCtx = await getTeamContext(supabase, user.id);
+    if (!canWrite(teamCtx)) return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+    const { ownerId } = teamCtx;
 
     const updates: Record<string, unknown> = {};
 
@@ -41,7 +45,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       .from("technicians")
       .update(updates)
       .eq("id", id)
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .select()
       .single();
 
@@ -70,12 +74,15 @@ export async function DELETE(_: Request, context: RouteContext) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const teamCtx = await getTeamContext(supabase, user.id);
+    if (!canWrite(teamCtx)) return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+    const { ownerId } = teamCtx;
 
     const { error } = await supabase
       .from("technicians")
       .delete()
       .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("user_id", ownerId);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

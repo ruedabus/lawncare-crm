@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
 import { createCheckoutSession } from "../../../../lib/stripe/api";
+import { getTeamContext } from "../../../../lib/team";
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { ownerId } = await getTeamContext(supabase, user.id);
 
     // Fetch invoice
     const { data: invoice, error: invError } = await supabase
@@ -39,11 +41,11 @@ export async function POST(request: Request) {
       .eq("id", invoice.customer_id)
       .single();
 
-    // Fetch the user's connected Stripe account (if set)
+    // Fetch the owner's connected Stripe account (if set)
     const { data: settings } = await supabase
       .from("settings")
       .select("stripe_account_id")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .maybeSingle();
 
     const connectedAccountId = settings?.stripe_account_id ?? undefined;

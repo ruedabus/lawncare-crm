@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "../../../../../lib/supabase/server";
-import { createServiceClient } from "../../../../../lib/supabase/server";
+import { createClient, createServiceClient } from "../../../../../lib/supabase/server";
+import { getTeamContext, canWrite } from "../../../../../lib/team";
 import {
   createRecurringPlanCheckoutSession,
   cancelStripeSubscription,
@@ -17,12 +17,13 @@ export async function GET(_: Request, context: RouteContext) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const { data: plan } = await supabase
     .from("recurring_plans")
     .select("*")
     .eq("customer_id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", ownerId)
     .neq("status", "cancelled")
     .order("created_at", { ascending: false })
     .limit(1)
@@ -39,6 +40,9 @@ export async function POST(request: Request, context: RouteContext) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const teamCtx = await getTeamContext(supabase, user.id);
+  if (!canWrite(teamCtx)) return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+  const { ownerId } = teamCtx;
 
   const body = await request.json();
   const { planName, amountDollars } = body;
@@ -59,7 +63,7 @@ export async function POST(request: Request, context: RouteContext) {
     supabase
       .from("settings")
       .select("business_name, business_email, business_phone, stripe_account_id")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .maybeSingle(),
   ]);
 
@@ -91,7 +95,7 @@ export async function POST(request: Request, context: RouteContext) {
       connectedAccountId,
       metadata: {
         crm_customer_id: customer.id,
-        crm_user_id: user.id,
+        crm_user_id: ownerId,
         plan_name_label: planName.trim(),
       },
     });
@@ -107,7 +111,7 @@ export async function POST(request: Request, context: RouteContext) {
   const { data: plan, error: insertError } = await supabaseService
     .from("recurring_plans")
     .insert({
-      user_id: user.id,
+      user_id: ownerId,
       customer_id: customer.id,
       plan_name: planName.trim(),
       amount_cents: amountCents,
@@ -185,12 +189,14 @@ export async function DELETE(_: Request, context: RouteContext) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const teamCtx2 = await getTeamContext(supabase, user.id);
+  if (!canWrite(teamCtx2)) return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
 
   const { data: plan } = await supabase
     .from("recurring_plans")
     .select("id, stripe_subscription_id, status")
     .eq("customer_id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", teamCtx2.ownerId)
     .neq("status", "cancelled")
     .order("created_at", { ascending: false })
     .limit(1)

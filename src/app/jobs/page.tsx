@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { AppShell } from "../../components/layout/app-shell";
 import { JobsList } from "../../components/jobs/jobs-list";
 import { CreateJobFormGlobal } from "../../components/jobs/create-job-form-global";
@@ -14,6 +15,7 @@ export default async function JobsPage() {
   if (!user) {
     redirect("/login");
   }
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const [
     { data: jobs, error: jobsError },
@@ -33,19 +35,19 @@ export default async function JobsPage() {
         scheduled_end,
         customers(id, name)
       `)
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .order("created_at", { ascending: false }),
 
     supabase
       .from("customers")
       .select("id, name")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .order("name", { ascending: true }),
 
     supabase
       .from("technicians")
       .select("id, name, color, is_active")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .eq("is_active", true)
       .order("name", { ascending: true }),
   ]);

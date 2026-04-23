@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../lib/supabase/server";
+import { getTeamContext } from "../../../lib/team";
 
 export async function POST(request: Request) {
   try {
@@ -55,12 +56,13 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { ownerId } = await getTeamContext(supabase, user.id);
 
     const { data, error } = await supabase
       .from("tasks")
       .insert([
         {
-          user_id: user.id,
+          user_id: ownerId,
           title: title.trim(),
           notes: notes?.trim() || null,
           due_date: due_date || null,

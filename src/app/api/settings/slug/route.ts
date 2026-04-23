@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
+import { getTeamContext, canWrite } from "../../../../lib/team";
 
 function randomSuffix() {
   return Math.random().toString(36).slice(2, 7);
@@ -19,12 +20,15 @@ export async function POST() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const teamCtx = await getTeamContext(supabase, user.id);
+  if (!canWrite(teamCtx)) return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+  const { ownerId } = teamCtx;
 
   // Get business name to build a nice slug
   const { data: settings } = await supabase
     .from("settings")
     .select("business_name, lead_capture_slug")
-    .eq("user_id", user.id)
+    .eq("user_id", ownerId)
     .maybeSingle();
 
   // If they already have a slug, return it
@@ -58,7 +62,7 @@ export async function POST() {
   const { error } = await supabase
     .from("settings")
     .upsert(
-      { user_id: user.id, lead_capture_slug: slug, updated_at: new Date().toISOString() },
+      { user_id: ownerId, lead_capture_slug: slug, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
 

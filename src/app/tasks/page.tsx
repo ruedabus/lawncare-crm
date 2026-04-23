@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { AppShell } from "../../components/layout/app-shell";
 import { TasksList } from "../../components/tasks/tasks-list";
 import { CreateTaskForm } from "../../components/tasks/create-task-form";
@@ -12,18 +13,19 @@ export default async function TasksPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const [{ data: tasks }, { data: technicians }] = await Promise.all([
     supabase
       .from("tasks")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .order("created_at", { ascending: false }),
 
     supabase
       .from("technicians")
       .select("id, name, color, is_active")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .eq("is_active", true)
       .order("name", { ascending: true }),
   ]);

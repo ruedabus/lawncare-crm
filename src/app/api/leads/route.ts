@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../lib/supabase/server";
+import { getTeamContext } from "../../../lib/team";
 
 export async function POST(request: Request) {
   try {
@@ -16,11 +17,12 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { ownerId } = await getTeamContext(supabase, user.id);
 
     const { data, error } = await supabase
       .from("leads")
       .insert([{
-        user_id: user.id,
+        user_id: ownerId,
         name: name.trim(),
         email: email?.trim() || null,
         phone: phone?.trim() || null,

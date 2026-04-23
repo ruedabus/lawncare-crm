@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { MobileNav } from "./mobile-nav";
 import { LogoutButton } from "../logout-button";
 
@@ -15,10 +16,14 @@ export async function Topbar({ title, backHref }: TopbarProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { ownerId } = user
+    ? await getTeamContext(supabase, user.id)
+    : { ownerId: user?.id ?? "" };
+
   const { data: settings } = await supabase
     .from("settings")
     .select("business_name")
-    .eq("user_id", user?.id ?? "")
+    .eq("user_id", ownerId)
     .maybeSingle();
 
   const businessName = settings?.business_name || "My Business";

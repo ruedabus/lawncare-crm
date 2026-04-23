@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "../../../../../lib/supabase/server";
 import { upsertPortalToken } from "../../../../../lib/portal-token";
 import { sendEmail } from "../../../../../lib/email/send";
+import { getTeamContext } from "../../../../../lib/team";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -13,11 +14,12 @@ export async function POST(_: Request, context: RouteContext) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   // Fetch customer + business settings in parallel
   const [{ data: customer }, { data: settings }] = await Promise.all([
-    supabase.from("customers").select("id, name, email").eq("id", id).eq("user_id", user.id).single(),
-    supabase.from("settings").select("business_name, business_email, business_phone").eq("user_id", user.id).maybeSingle(),
+    supabase.from("customers").select("id, name, email").eq("id", id).eq("user_id", ownerId).single(),
+    supabase.from("settings").select("business_name, business_email, business_phone").eq("user_id", ownerId).maybeSingle(),
   ]);
 
   if (!customer) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
@@ -29,7 +31,7 @@ export async function POST(_: Request, context: RouteContext) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  const token = await upsertPortalToken(customer.id, user.id);
+  const token = await upsertPortalToken(customer.id, ownerId);
   const portalUrl = `${appUrl}/portal/${token}`;
 
   const businessName = settings?.business_name ?? "YardPilot";

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const { error: dbError } = await service
       .from("settings")
       .upsert(
-        { user_id: user.id, stripe_account_id: stripeUserId, updated_at: new Date().toISOString() },
+        { user_id: user.id, stripe_account_id: stripeUserId, updated_at: new Date().toISOString() }, // connect callback always uses owner's own ID
         { onConflict: "user_id" }
       );
 

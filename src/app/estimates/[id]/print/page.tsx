@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
+import { getTeamContext } from "../../../../lib/team";
 import { PrintTrigger, PrintButton } from "../../../../components/print/print-trigger";
 
 type LineItem = { description?: string; quantity?: number; unit_price?: number; amount?: number };
@@ -11,6 +12,7 @@ export default async function EstimatePrintPage({ params }: { params: Params }) 
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const [{ data: estimate }, { data: settings }] = await Promise.all([
     supabase
@@ -21,7 +23,7 @@ export default async function EstimatePrintPage({ params }: { params: Params }) 
     supabase
       .from("settings")
       .select("business_name, business_address, business_phone, business_email, business_website")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .maybeSingle(),
   ]);
 

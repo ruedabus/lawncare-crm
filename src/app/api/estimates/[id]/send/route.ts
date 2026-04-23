@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "../../../../../lib/supabase/server";
 import { sendEmail } from "../../../../../lib/email/send";
 import { estimateSentEmail } from "../../../../../lib/email/templates";
+import { getTeamContext } from "../../../../../lib/team";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -12,6 +13,7 @@ export async function POST(_: Request, context: RouteContext) {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { ownerId } = await getTeamContext(supabase, user.id);
 
     const [{ data: estimate }, { data: settings }] = await Promise.all([
       supabase
@@ -22,7 +24,7 @@ export async function POST(_: Request, context: RouteContext) {
       supabase
         .from("settings")
         .select("business_name, business_email, business_phone")
-        .eq("user_id", user.id)
+        .eq("user_id", ownerId)
         .maybeSingle(),
     ]);
 

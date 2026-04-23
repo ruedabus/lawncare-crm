@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { AppShell } from "../../components/layout/app-shell";
 import { CreateTechnicianForm } from "../../components/technicians/create-technician-form";
 import { TechniciansList } from "../../components/technicians/technicians-list";
@@ -15,12 +16,13 @@ export default async function TechniciansPage() {
   if (!user) {
     redirect("/login");
   }
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
-  // 📥 Fetch technicians (scoped to user)
+  // 📥 Fetch technicians (scoped to owner)
   const { data: technicians, error } = await supabase
     .from("technicians")
     .select("id, name, email, phone, color, is_active, created_at")
-    .eq("user_id", user.id)
+    .eq("user_id", ownerId)
     .order("name", { ascending: true });
 
   const technicianList = (technicians ?? []).map((tech) => ({

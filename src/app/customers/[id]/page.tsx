@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createClient } from "../../../lib/supabase/server";
+import { getTeamContext } from "../../../lib/team";
 import { JobActions } from "../../../components/jobs/job-actions";
 import { CreateJobForm } from "../../../components/jobs/create-job-form";
 import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-form";
@@ -30,6 +31,7 @@ export default async function CustomerDetailsPage({
 if (!user) {
   redirect("/login");
 }
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const { data: customer } = await supabase
     .from("customers")
@@ -58,7 +60,7 @@ if (!user) {
       supabase
   .from("technicians")
   .select("id, name, color, is_active")
-  .eq("user_id", user.id)
+  .eq("user_id", ownerId)
   .eq("is_active", true)
   .order("name", { ascending: true }),
     ]);

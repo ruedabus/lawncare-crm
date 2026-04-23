@@ -4,6 +4,7 @@ import { sendEmail } from "../../../lib/email/send";
 import { buildInvoiceEmailData } from "../../../lib/email/invoice-email-data";
 import { invoiceCreatedEmail } from "../../../lib/email/templates";
 import { createCheckoutSession } from "../../../lib/stripe/api";
+import { getTeamContext, canWrite } from "../../../lib/team";
 
 export async function POST(request: Request) {
   try {
@@ -22,6 +23,10 @@ export async function POST(request: Request) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const teamCtx = await getTeamContext(supabase, user.id);
+    if (!canWrite(teamCtx)) return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+    const { ownerId } = teamCtx;
 
     const parsedAmount = Number(amount);
     if (Number.isNaN(parsedAmount)) {
@@ -35,7 +40,7 @@ export async function POST(request: Request) {
       .from("invoices")
       .insert([
         {
-          user_id: user?.id ?? null,
+          user_id: ownerId,
           customer_id,
           job_id: job_id || null,
           title: title.trim(),
@@ -54,8 +59,8 @@ export async function POST(request: Request) {
     }
 
     // Auto-send invoice email (fire-and-forget — don't block the response)
-    if (user) {
-      buildInvoiceEmailData(supabase, data.id, user.id).then(async (emailData) => {
+    {
+      buildInvoiceEmailData(supabase, data.id, ownerId).then(async (emailData) => {
         if (!emailData) return;
 
         // Generate a Stripe Pay Now URL to embed in the email
