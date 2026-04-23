@@ -46,7 +46,7 @@ export default async function InvoicePage({ params, searchParams }: Props) {
   const statusColor = statusColors[inv.status] ?? statusColors.unpaid;
 
   return (
-    <AppShell title="Invoice">
+    <AppShell title="Invoice" backHref="/invoices">
       <div className="mx-auto max-w-3xl space-y-6">
 
         {/* Success banner shown after Stripe redirect */}
