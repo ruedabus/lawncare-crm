@@ -18,7 +18,7 @@ export async function Topbar({ title, backHref }: TopbarProps) {
 
   const { ownerId } = user
     ? await getTeamContext(supabase, user.id)
-    : { ownerId: user?.id ?? "" };
+    : { ownerId: "" };
 
   const { data: settings } = await supabase
     .from("settings")
