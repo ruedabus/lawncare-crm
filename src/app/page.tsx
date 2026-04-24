@@ -563,61 +563,64 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── User Manual download ────────────────────────────── */}
+      {/* ── Resources download ────────────────────────────── */}
       <section className="border-y border-slate-200 bg-white px-6 py-16 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col items-center gap-8 rounded-2xl border border-emerald-100 bg-emerald-50 px-8 py-10 text-center sm:flex-row sm:text-left">
-            {/* Book icon */}
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-              <svg
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.6}
-                aria-hidden="true"
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-950">Resources</h2>
+            <p className="mt-2 text-sm text-slate-500">Download our guides to get the most out of YardPilot.</p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* Owner & Team Manual */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-6 py-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-950">Owner &amp; Team Manual</h3>
+                <p className="mt-1.5 text-sm leading-6 text-slate-600">
+                  The complete guide for business owners and their team. Covers every feature — jobs, photos, review requests, team roles, billing, and more.
+                </p>
+              </div>
+              <a
+                href="/YardPilot-Owner-Manual.docx"
+                download
+                className="mt-auto inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                />
-              </svg>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Owner Manual
+              </a>
             </div>
 
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-slate-950">
-                YardPilot User Manual
-              </h3>
-              <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                Everything you need to get the most out of YardPilot — from
-                onboarding your first customer to setting up QR lead capture,
-                MFA security, Stripe payments, and technician reminders. 15
-                chapters, fully illustrated.
-              </p>
-            </div>
-
-            <a
-              href="/YardPilot-User-Manual.docx"
-              download
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
+            {/* Customer Guide */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-blue-100 bg-blue-50 px-6 py-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-950">Customer Guide</h3>
+                <p className="mt-1.5 text-sm leading-6 text-slate-600">
+                  A plain-language guide for your customers. Explains how to pay invoices online, leave a Google review, and what to expect after each service.
+                </p>
+              </div>
+              <a
+                href="/YardPilot-Customer-Guide.docx"
+                download
+                className="mt-auto inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                />
-              </svg>
-              Download Manual
-            </a>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Customer Guide
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -664,7 +667,8 @@ export default function LandingPage() {
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
               <a href="#features" className="hover:text-white">Features</a>
               <a href="#pricing" className="hover:text-white">Pricing</a>
-              <a href="/YardPilot-User-Manual.docx" download className="hover:text-white">User Manual</a>
+              <a href="/YardPilot-Owner-Manual.docx" download className="hover:text-white">Owner Manual</a>
+              <a href="/YardPilot-Customer-Guide.docx" download className="hover:text-white">Customer Guide</a>
               <Link href="/terms" className="hover:text-white">Terms of Service</Link>
               <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
               <Link href="/login" className="hover:text-white">Log in</Link>
