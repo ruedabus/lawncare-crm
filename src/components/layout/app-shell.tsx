@@ -1,5 +1,7 @@
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 
 type AppShellProps = {
   title: string;
@@ -7,11 +9,17 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-export function AppShell({ title, backHref, children }: AppShellProps) {
+export async function AppShell({ title, backHref, children }: AppShellProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user
+    ? (await getTeamContext(supabase, user.id)).role
+    : null;
+
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar role={role} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar title={title} backHref={backHref} />

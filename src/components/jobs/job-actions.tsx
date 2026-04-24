@@ -15,6 +15,7 @@ type Job = {
 
 type JobActionsProps = {
   job: Job;
+  isTechnician?: boolean;
 };
 
 type FormErrors = {
@@ -58,7 +59,7 @@ function buildShiftedDateTime(
   return shifted.toISOString();
 }
 
-export function JobActions({ job }: JobActionsProps) {
+export function JobActions({ job, isTechnician = false }: JobActionsProps) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -366,23 +367,28 @@ export function JobActions({ job }: JobActionsProps) {
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => {
-            setIsEditing((prev) => !prev);
-            setErrorMessage("");
-            if (isEditing) {
-              resetEditState();
-            }
-          }}
-          className={`${actionButtonBase} border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
-        >
-          {isEditing ? "Close Edit" : "Edit"}
-        </button>
+        {/* Edit and Delete are owner/admin only */}
+        {!isTechnician && (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              setIsEditing((prev) => !prev);
+              setErrorMessage("");
+              if (isEditing) {
+                resetEditState();
+              }
+            }}
+            className={`${actionButtonBase} border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
+          >
+            {isEditing ? "Close Edit" : "Edit"}
+          </button>
+        )}
 
         {STATUS_OPTIONS.map((option) => {
           const isCurrent = job.status === option.value;
+          // Technicians can only mark In Progress or Completed
+          if (isTechnician && !["in_progress", "completed"].includes(option.value)) return null;
 
           return (
             <button
@@ -399,14 +405,16 @@ export function JobActions({ job }: JobActionsProps) {
           );
         })}
 
-        <button
-          type="button"
-          disabled={loading}
-          onClick={deleteJob}
-          className={`${actionButtonBase} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`}
-        >
-          Delete
-        </button>
+        {!isTechnician && (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={deleteJob}
+            className={`${actionButtonBase} border-red-200 bg-red-50 text-red-700 hover:bg-red-100`}
+          >
+            Delete
+          </button>
+        )}
       </div>
     </div>
   );

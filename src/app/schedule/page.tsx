@@ -37,7 +37,20 @@ export default async function SchedulePage({
   if (!user) {
     redirect("/login");
   }
-  const { ownerId } = await getTeamContext(supabase, user.id);
+  const { ownerId, role } = await getTeamContext(supabase, user.id);
+  const isTechnician = role === "technician";
+
+  // Find the technician record for the logged-in user so we can scope the schedule
+  let assignedTechnicianId: string | null = null;
+  if (isTechnician) {
+    const { data: tech } = await supabase
+      .from("technicians")
+      .select("id")
+      .eq("user_id", ownerId)
+      .eq("email", user.email ?? "")
+      .maybeSingle();
+    assignedTechnicianId = tech?.id ?? null;
+  }
 
   const params = await searchParams;
   const selectedDate = params?.date
@@ -50,38 +63,54 @@ export default async function SchedulePage({
   const weekStart = startOfWeek(baseDate);
   const weekEnd = endOfWeek(baseDate);
 
+  // Build the jobs query — scope to assigned technician if applicable
+  let jobsQuery = supabase
+    .from("jobs")
+    .select(
+      `
+        id,
+        title,
+        status,
+        notes,
+        scheduled_start,
+        scheduled_end,
+        technician_id,
+        customer_id,
+        customers(name)
+      `
+    )
+    .eq("user_id", ownerId)
+    .gte("scheduled_start", weekStart.toISOString())
+    .lt("scheduled_start", weekEnd.toISOString())
+    .order("scheduled_start", { ascending: true });
+
+  if (isTechnician) {
+    jobsQuery = assignedTechnicianId
+      ? jobsQuery.eq("technician_id", assignedTechnicianId)
+      : jobsQuery.eq("technician_id", "00000000-0000-0000-0000-000000000000");
+  }
+
+  // Technicians list — scope to just the logged-in tech so the calendar only
+  // shows their own row, not the full crew
+  let techniciansQuery = supabase
+    .from("technicians")
+    .select("id, name, color, is_active")
+    .eq("user_id", ownerId)
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (isTechnician && assignedTechnicianId) {
+    techniciansQuery = techniciansQuery.eq("id", assignedTechnicianId);
+  }
+
   const [
     { data: jobs },
     { data: technicians },
     { data: customers },
     { data: tasks },
   ] = await Promise.all([
-    supabase
-      .from("jobs")
-      .select(
-        `
-          id,
-          title,
-          status,
-          notes,
-          scheduled_start,
-          scheduled_end,
-          technician_id,
-          customer_id,
-          customers(name)
-        `
-      )
-      .eq("user_id", ownerId)
-      .gte("scheduled_start", weekStart.toISOString())
-      .lt("scheduled_start", weekEnd.toISOString())
-      .order("scheduled_start", { ascending: true }),
-
-    supabase
-      .from("technicians")
-      .select("id, name, color, is_active")
-      .eq("user_id", ownerId)
-      .eq("is_active", true)
-      .order("name", { ascending: true }),
+    jobsQuery,
+    techniciansQuery,
 
     supabase
       .from("customers")

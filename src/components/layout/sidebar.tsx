@@ -18,22 +18,26 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
-  { href: "/customers", label: "Customers", icon: UsersIcon },
-  { href: "/leads", label: "Leads", icon: FunnelIcon },
-  { href: "/estimates", label: "Estimates", icon: CalculatorIcon },
-  { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon },
-  { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon },
-  { href: "/technicians", label: "Technicians", icon: WrenchScrewdriverIcon },
-  { href: "/invoices", label: "Invoices", icon: DocumentTextIcon },
-  { href: "/tasks", label: "Tasks", icon: CheckCircleIcon },
-  { href: "/reports", label: "Reports", icon: ChartBarIcon },
-  { href: "/settings", label: "Settings", icon: Cog6ToothIcon },
+const allNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: HomeIcon, technicianVisible: true },
+  { href: "/customers", label: "Customers", icon: UsersIcon, technicianVisible: false },
+  { href: "/leads", label: "Leads", icon: FunnelIcon, technicianVisible: false },
+  { href: "/estimates", label: "Estimates", icon: CalculatorIcon, technicianVisible: false },
+  { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon, technicianVisible: true },
+  { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon, technicianVisible: true },
+  { href: "/technicians", label: "Technicians", icon: WrenchScrewdriverIcon, technicianVisible: false },
+  { href: "/invoices", label: "Invoices", icon: DocumentTextIcon, technicianVisible: false },
+  { href: "/tasks", label: "Tasks", icon: CheckCircleIcon, technicianVisible: false },
+  { href: "/reports", label: "Reports", icon: ChartBarIcon, technicianVisible: false },
+  { href: "/settings", label: "Settings", icon: Cog6ToothIcon, technicianVisible: false },
 ];
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: string | null }) {
   const pathname = usePathname();
+  const isTechnician = role === "technician";
+  const navItems = isTechnician
+    ? allNavItems.filter((item) => item.technicianVisible)
+    : allNavItems;
 
   return (
     <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">

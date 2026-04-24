@@ -202,13 +202,53 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/login");
   }
-  const { ownerId } = await getTeamContext(supabase, user.id);
+  const { ownerId, role } = await getTeamContext(supabase, user.id);
+  const isTechnician = role === "technician";
+
+  // If the logged-in user is a technician, find their technician record so we
+  // can scope job stats to only their assigned work.
+  let assignedTechnicianId: string | null = null;
+  if (isTechnician) {
+    const { data: tech } = await supabase
+      .from("technicians")
+      .select("id")
+      .eq("user_id", ownerId)
+      .eq("email", user.email ?? "")
+      .maybeSingle();
+    assignedTechnicianId = tech?.id ?? null;
+  }
 
   // ── Real stats ──────────────────────────────────────────────────────────
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
   sixMonthsAgo.setDate(1);
   sixMonthsAgo.setHours(0, 0, 0, 0);
+
+  // Build job queries — scope to assigned technician when applicable
+  let activeJobsQuery = supabase
+    .from("jobs")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", ownerId)
+    .in("status", ["scheduled", "in_progress"]);
+
+  let scheduledJobsQuery = supabase
+    .from("jobs")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", ownerId)
+    .eq("status", "scheduled");
+
+  let completedTodayQuery = supabase
+    .from("jobs")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", ownerId)
+    .eq("status", "completed")
+    .gte("updated_at", new Date().toISOString().slice(0, 10));
+
+  if (isTechnician && assignedTechnicianId) {
+    activeJobsQuery = activeJobsQuery.eq("technician_id", assignedTechnicianId);
+    scheduledJobsQuery = scheduledJobsQuery.eq("technician_id", assignedTechnicianId);
+    completedTodayQuery = completedTodayQuery.eq("technician_id", assignedTechnicianId);
+  }
 
   const [
     { count: totalCustomers },
@@ -219,35 +259,28 @@ export default async function DashboardPage() {
     { count: completedToday },
     { data: chartInvoices },
   ] = await Promise.all([
-    supabase.from("customers").select("*", { count: "exact", head: true }),
-    supabase
-      .from("jobs")
-      .select("*", { count: "exact", head: true })
-      .in("status", ["scheduled", "in_progress"]),
+    supabase.from("customers").select("*", { count: "exact", head: true }).eq("user_id", ownerId),
+    activeJobsQuery,
     supabase
       .from("invoices")
       .select("*", { count: "exact", head: true })
+      .eq("user_id", ownerId)
       .eq("status", "unpaid"),
     supabase
       .from("invoices")
       .select("amount")
+      .eq("user_id", ownerId)
       .eq("status", "paid")
       .gte(
         "created_at",
         new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
       ),
-    supabase
-      .from("jobs")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "scheduled"),
-    supabase
-      .from("jobs")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "completed")
-      .gte("updated_at", new Date().toISOString().slice(0, 10)),
+    scheduledJobsQuery,
+    completedTodayQuery,
     supabase
       .from("invoices")
       .select("amount, created_at")
+      .eq("user_id", ownerId)
       .eq("status", "paid")
       .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
@@ -280,6 +313,17 @@ export default async function DashboardPage() {
   const chartMax = Math.max(...chartMonths.map((m) => m.value), 1);
 
   // ── Recent Activity ─────────────────────────────────────────────────────
+  let recentJobsQuery = supabase
+    .from("jobs")
+    .select("title, created_at")
+    .eq("user_id", ownerId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (isTechnician && assignedTechnicianId) {
+    recentJobsQuery = recentJobsQuery.eq("technician_id", assignedTechnicianId);
+  }
+
   const [
     { data: recentCustomers },
     { data: recentJobs },
@@ -288,46 +332,53 @@ export default async function DashboardPage() {
     supabase
       .from("customers")
       .select("name, created_at")
+      .eq("user_id", ownerId)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase
-      .from("jobs")
-      .select("title, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5),
+    recentJobsQuery,
     supabase
       .from("invoices")
       .select("amount, created_at")
+      .eq("user_id", ownerId)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
 
   type ActivityEvent = { text: string; ts: string };
-  const events: ActivityEvent[] = [
-    ...(recentCustomers ?? []).map((c) => ({
-      text: `Customer added: ${c.name}`,
-      ts: c.created_at,
-    })),
-    ...(recentJobs ?? []).map((j) => ({
-      text: `Job created: ${j.title}`,
-      ts: j.created_at,
-    })),
-    ...(recentInvoices ?? []).map((i) => ({
-      text: `Invoice created: $${Number(i.amount ?? 0).toFixed(2)}`,
-      ts: i.created_at,
-    })),
-  ];
+  const events: ActivityEvent[] = isTechnician
+    ? [
+        ...(recentJobs ?? []).map((j) => ({
+          text: `Job: ${j.title}`,
+          ts: j.created_at,
+        })),
+      ]
+    : [
+        ...(recentCustomers ?? []).map((c) => ({
+          text: `Customer added: ${c.name}`,
+          ts: c.created_at,
+        })),
+        ...(recentJobs ?? []).map((j) => ({
+          text: `Job created: ${j.title}`,
+          ts: j.created_at,
+        })),
+        ...(recentInvoices ?? []).map((i) => ({
+          text: `Invoice created: $${Number(i.amount ?? 0).toFixed(2)}`,
+          ts: i.created_at,
+        })),
+      ];
   events.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
   const activity = events.slice(0, 6);
 
   // ── Payment Snapshot ────────────────────────────────────────────────────
   const { count: totalInvoices } = await supabase
     .from("invoices")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", ownerId);
 
   const { count: paidInvoices } = await supabase
     .from("invoices")
     .select("*", { count: "exact", head: true })
+    .eq("user_id", ownerId)
     .eq("status", "paid");
 
   const paidPct =
@@ -417,6 +468,37 @@ if (wRes.ok) {
         </Link>
 
         {/* Top metric cards */}
+        {isTechnician ? (
+          <section className="grid gap-4 md:grid-cols-3">
+            <Link href="/jobs" className="block">
+              <MetricCard
+                title="My Active Jobs"
+                value={activeJobs ?? 0}
+                subtitle="Assigned & in progress"
+                icon={<ClipboardDocumentListIcon className="h-6 w-6" />}
+                color="bg-violet-600"
+              />
+            </Link>
+            <Link href="/jobs" className="block">
+              <MetricCard
+                title="Scheduled"
+                value={scheduledJobs ?? 0}
+                subtitle="Upcoming assigned jobs"
+                icon={<ClipboardDocumentListIcon className="h-6 w-6" />}
+                color="bg-slate-600"
+              />
+            </Link>
+            <Link href="/jobs" className="block">
+              <MetricCard
+                title="Completed Today"
+                value={completedToday ?? 0}
+                subtitle="Jobs finished today"
+                icon={<ClipboardDocumentListIcon className="h-6 w-6" />}
+                color="bg-emerald-600"
+              />
+            </Link>
+          </section>
+        ) : (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
            <Link href="/customers" className="block">
           <MetricCard
@@ -426,7 +508,7 @@ if (wRes.ok) {
            icon={<UsersIcon className="h-6 w-6" />}
            color="bg-blue-600"
           />
-        </Link>   
+        </Link>
         <Link href="/jobs" className="block">
        <MetricCard
           title="Jobs"
@@ -455,7 +537,9 @@ if (wRes.ok) {
            />
          </Link>
         </section>
+        )}
 
+        {!isTechnician && (
         <section className="grid gap-6 xl:grid-cols-3">
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
     <div className="flex items-start justify-between">
@@ -544,6 +628,7 @@ if (wRes.ok) {
     </PanelCard>
   </div>
 </section>
+        )}
 
         <section className="grid gap-6 lg:grid-cols-3">
           {/* Recent Activity */}
@@ -559,8 +644,8 @@ if (wRes.ok) {
             </div>
           </PanelCard>
 
-          {/* Payment Snapshot */}
-          <PanelCard title="Payment Snapshot">
+          {/* Payment Snapshot — owner/admin only */}
+          {!isTechnician && <PanelCard title="Payment Snapshot">
             <div className="flex flex-col items-center py-4">
               <svg width="140" height="140" viewBox="0 0 140 140">
                 <circle
@@ -588,7 +673,7 @@ if (wRes.ok) {
                 {paidInvoices ?? 0} of {totalInvoices ?? 0} invoices paid
               </p>
             </div>
-          </PanelCard>
+          </PanelCard>}
 
           {/* Weather */}
          <PanelCard title="Weather">

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
+import { getUserPlanInfo } from "../../../../lib/plan-guard";
+import { sendEmail } from "../../../../lib/email/send";
+import { buildReviewRequestEmail } from "../../../../lib/email/templates";
 
 type RouteContext = {
   params: Promise<{
@@ -184,6 +187,77 @@ export async function PATCH(request: Request, context: RouteContext) {
           recurrence_end_date: recurrenceEndDate ?? null,
         },
       ]);
+    }
+
+    // ── Review request email on job completion ────────────────────────────────
+    // Fires when a job transitions to "completed" for the first time.
+    // Gated to Pro and Premier plans. Requires google_review_url in settings.
+    if (wasNotCompleted && isNowCompleted) {
+      try {
+        const ownerId = existingJob.user_id;
+        const { planName } = await getUserPlanInfo(ownerId);
+
+        if (planName === "pro" || planName === "premier") {
+          // Fetch owner settings for business name + review URL
+          const { data: settings } = await supabase
+            .from("settings")
+            .select("business_name, business_email, google_review_url")
+            .eq("user_id", ownerId)
+            .maybeSingle();
+
+          if (settings?.google_review_url && existingJob.customer_id) {
+            // Fetch customer email + name
+            const { data: customer } = await supabase
+              .from("customers")
+              .select("name, email")
+              .eq("id", existingJob.customer_id)
+              .maybeSingle();
+
+            if (customer?.email) {
+              // Fetch before/after photos for the email
+              const { data: photos } = await supabase
+                .from("job_photos")
+                .select("type, storage_path")
+                .eq("job_id", id)
+                .order("created_at", { ascending: true });
+
+              const beforePath = photos?.find((p) => p.type === "before")?.storage_path;
+              const afterPath = photos?.find((p) => p.type === "after")?.storage_path;
+
+              const getSignedUrl = async (path: string | undefined) => {
+                if (!path) return null;
+                const { data } = await supabase.storage
+                  .from("job-photos")
+                  .createSignedUrl(path, 60 * 60 * 24); // 24h so link works in email
+                return data?.signedUrl ?? null;
+              };
+
+              const [beforePhotoUrl, afterPhotoUrl] = await Promise.all([
+                getSignedUrl(beforePath),
+                getSignedUrl(afterPath),
+              ]);
+
+              await sendEmail({
+                to: customer.email,
+                fromName: settings.business_name ?? "Your Lawn Care Team",
+                replyTo: settings.business_email ?? undefined,
+                subject: `How did we do? — ${settings.business_name ?? "Your lawn care team"}`,
+                html: buildReviewRequestEmail({
+                  customerName: customer.name ?? "there",
+                  businessName: settings.business_name ?? "Your Lawn Care Team",
+                  jobTitle: existingJob.title,
+                  reviewUrl: settings.google_review_url,
+                  beforePhotoUrl,
+                  afterPhotoUrl,
+                }),
+              }).catch(console.error); // fire-and-forget, never block the response
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[review-request] error:", err);
+        // Never block job update if review email fails
+      }
     }
 
     return NextResponse.json({ job: data }, { status: 200 });

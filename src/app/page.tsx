@@ -65,6 +65,7 @@ const PLANS = [
     period: "/mo",
     description: "Perfect for solo operators getting organized.",
     highlight: false,
+    premium: false,
     features: [
       "Up to 50 customers",
       "Invoices & online payments",
@@ -84,12 +85,15 @@ const PLANS = [
     period: "/mo",
     description: "Best for growing lawn care businesses.",
     highlight: true,
+    premium: false,
     features: [
       "Up to 100 customers",
       "Everything in Basic",
       "Up to 3 users (owner + 2 team)",
       "Multiple technicians",
-      "SMS tech reminders",
+      "Email tech reminders",
+      "Before & after job photos",
+      "Automated review requests",
       "Lead source tracking",
       "Priority support",
     ],
@@ -102,10 +106,13 @@ const PLANS = [
     period: "/mo",
     description: "For teams that want unlimited scale.",
     highlight: false,
+    premium: true,
     features: [
       "Unlimited customers",
       "Everything in Pro",
       "Unlimited team users",
+      "Before & after job photos",
+      "Automated review requests",
       "Advanced reporting",
       "Multiple QR codes",
       "Priority support",
@@ -467,12 +474,19 @@ export default function LandingPage() {
                 key={plan.name}
                 className={[
                   "relative flex flex-col rounded-2xl border p-8 shadow-sm",
-                  plan.highlight
+                  plan.premium
+                    ? "border-amber-400 bg-gradient-to-br from-amber-500 to-yellow-600 text-white shadow-[0_20px_60px_rgba(245,158,11,0.35)]"
+                    : plan.highlight
                     ? "border-emerald-500 bg-emerald-700 text-white shadow-[0_20px_60px_rgba(16,185,129,0.22)]"
                     : "border-slate-200 bg-white",
                 ].join(" ")}
               >
-                {plan.highlight && (
+                {plan.premium && (
+                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-amber-300 px-4 py-1 text-xs font-semibold text-amber-900 shadow">
+                    ⭐ Best value
+                  </span>
+                )}
+                {plan.highlight && !plan.premium && (
                   <span className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-emerald-400 px-4 py-1 text-xs font-semibold text-emerald-900 shadow">
                     Most popular
                   </span>
@@ -480,7 +494,7 @@ export default function LandingPage() {
                 <p
                   className={[
                     "text-sm font-semibold uppercase tracking-widest",
-                    plan.highlight ? "text-emerald-300" : "text-emerald-600",
+                    plan.premium ? "text-amber-100" : plan.highlight ? "text-emerald-300" : "text-emerald-600",
                   ].join(" ")}
                 >
                   {plan.name}
@@ -489,7 +503,7 @@ export default function LandingPage() {
                   <span
                     className={[
                       "text-5xl font-extrabold",
-                      plan.highlight ? "text-white" : "text-slate-950",
+                      plan.premium || plan.highlight ? "text-white" : "text-slate-950",
                     ].join(" ")}
                   >
                     {plan.price}
@@ -497,7 +511,7 @@ export default function LandingPage() {
                   <span
                     className={[
                       "mb-1 text-sm",
-                      plan.highlight ? "text-emerald-200" : "text-slate-500",
+                      plan.premium ? "text-amber-100" : plan.highlight ? "text-emerald-200" : "text-slate-500",
                     ].join(" ")}
                   >
                     {plan.period}
@@ -506,7 +520,7 @@ export default function LandingPage() {
                 <p
                   className={[
                     "mt-2 text-sm",
-                    plan.highlight ? "text-emerald-100" : "text-slate-500",
+                    plan.premium ? "text-amber-50" : plan.highlight ? "text-emerald-100" : "text-slate-500",
                   ].join(" ")}
                 >
                   {plan.description}
@@ -517,14 +531,12 @@ export default function LandingPage() {
                       <Check
                         className={[
                           "mt-0.5 h-4 w-4 shrink-0",
-                          plan.highlight
-                            ? "text-emerald-300"
-                            : "text-emerald-500",
+                          plan.premium ? "text-amber-200" : plan.highlight ? "text-emerald-300" : "text-emerald-500",
                         ].join(" ")}
                       />
                       <span
                         className={
-                          plan.highlight ? "text-emerald-50" : "text-slate-600"
+                          plan.premium ? "text-amber-50" : plan.highlight ? "text-emerald-50" : "text-slate-600"
                         }
                       >
                         {feat}
@@ -533,16 +545,18 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-  href={plan.ctaHref}
-  className={[
-    "mt-8 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition",
-    plan.highlight
-      ? "border border-white bg-white !text-slate-900 shadow-md hover:bg-emerald-50"
-      : "bg-emerald-600 text-white hover:bg-emerald-500",
-  ].join(" ")}
->
-  {plan.cta}
-</Link>
+                  href={plan.ctaHref}
+                  className={[
+                    "mt-8 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition",
+                    plan.premium
+                      ? "border border-white bg-white !text-amber-700 shadow-md hover:bg-amber-50"
+                      : plan.highlight
+                      ? "border border-white bg-white !text-slate-900 shadow-md hover:bg-emerald-50"
+                      : "bg-emerald-600 text-white hover:bg-emerald-500",
+                  ].join(" ")}
+                >
+                  {plan.cta}
+                </Link>
               </div>
             ))}
           </div>

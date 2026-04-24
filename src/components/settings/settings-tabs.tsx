@@ -10,6 +10,7 @@ type Settings = {
   business_phone?: string;
   business_email?: string;
   business_website?: string;
+  google_review_url?: string;
   service_city?: string;
   service_state?: string;
   service_lat?: number;
@@ -131,6 +132,7 @@ function BusinessProfileTab({ settings }: { settings: Settings }) {
     business_phone: settings.business_phone ?? "",
     business_email: settings.business_email ?? "",
     business_website: settings.business_website ?? "",
+    google_review_url: settings.google_review_url ?? "",
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -211,6 +213,38 @@ function BusinessProfileTab({ settings }: { settings: Settings }) {
             placeholder="https://sunshinelawn.com"
             className={inputCls}
           />
+        </Field>
+
+        <Field label="Google Review Link">
+          {settings.plan_name === "pro" || settings.plan_name === "premier" ? (
+            <>
+              <input
+                type="url"
+                value={form.google_review_url}
+                onChange={(e) => setForm({ ...form, google_review_url: e.target.value })}
+                placeholder="https://g.page/r/your-business/review"
+                className={inputCls}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                When a job is marked complete, the customer automatically receives a review request email with this link.
+              </p>
+            </>
+          ) : (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-800">Automatic review requests — Pro &amp; Premier</p>
+                <p className="mt-0.5 text-xs text-amber-700">
+                  Upgrade to Pro or Premier and every completed job automatically sends your customer a review request email. One of the fastest ways to grow your reputation.
+                </p>
+                <a href="/settings?tab=billing" className="mt-2 inline-block text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900">
+                  Upgrade your plan →
+                </a>
+              </div>
+            </div>
+          )}
         </Field>
 
         <SaveRow status={status} errorMsg={errorMsg} />

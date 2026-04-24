@@ -197,8 +197,8 @@ export function TeamTab() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[member.role]}`}>
                       {ROLE_LABELS[member.role]}
                     </span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[member.status]}`}>
-                      {member.status === "active" ? "Active" : "Invite pending"}
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${member.accepted_at ? STATUS_COLORS["active"] : STATUS_COLORS["pending"]}`}>
+                      {member.accepted_at ? "Active" : "Invite pending"}
                     </span>
                   </div>
                   {member.name && (

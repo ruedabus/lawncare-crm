@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { createServiceClient } from "../../../lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -30,12 +31,24 @@ export async function GET(request: Request) {
       }
     );
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       token_hash,
       type,
     });
 
     if (!error) {
+      // If this was a team invite, stamp accepted_at so the team tab shows
+      // "Active" rather than "Invite pending".
+      const userId = data?.user?.id;
+      if (userId && type === "invite") {
+        const service = createServiceClient();
+        await service
+          .from("team_members")
+          .update({ accepted_at: new Date().toISOString() })
+          .eq("member_user_id", userId)
+          .is("accepted_at", null);
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

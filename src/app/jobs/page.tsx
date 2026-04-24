@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import { getTeamContext } from "../../lib/team";
+import { getUserPlanInfo } from "../../lib/plan-guard";
 import { AppShell } from "../../components/layout/app-shell";
 import { JobsList } from "../../components/jobs/jobs-list";
 import { CreateJobFormGlobal } from "../../components/jobs/create-job-form-global";
@@ -15,28 +16,59 @@ export default async function JobsPage() {
   if (!user) {
     redirect("/login");
   }
-  const { ownerId } = await getTeamContext(supabase, user.id);
+  const { ownerId, role } = await getTeamContext(supabase, user.id);
+
+  // If the logged-in user is a technician, find their technician record by email
+  // so we can filter jobs to only their assigned work.
+  let assignedTechnicianId: string | null = null;
+  if (role === "technician") {
+    const { data: tech } = await supabase
+      .from("technicians")
+      .select("id")
+      .eq("user_id", ownerId)
+      .eq("email", user.email ?? "")
+      .maybeSingle();
+    assignedTechnicianId = tech?.id ?? null;
+  }
+
+  const isTechnician = role === "technician";
+
+  const { planName } = await getUserPlanInfo(ownerId);
+
+  // Build jobs query — technicians only see their assigned jobs.
+  // If the technician's login email doesn't match any technician record,
+  // force a no-match filter so they see zero jobs rather than all jobs.
+  let jobsQuery = supabase
+    .from("jobs")
+    .select(`
+      id,
+      title,
+      status,
+      service_date,
+      notes,
+      customer_id,
+      scheduled_start,
+      scheduled_end,
+      customers(id, name)
+    `)
+    .eq("user_id", ownerId)
+    .order("created_at", { ascending: false });
+
+  if (isTechnician) {
+    if (assignedTechnicianId) {
+      jobsQuery = jobsQuery.eq("technician_id", assignedTechnicianId);
+    } else {
+      // No matching technician record — return nothing rather than everything
+      jobsQuery = jobsQuery.eq("technician_id", "00000000-0000-0000-0000-000000000000");
+    }
+  }
 
   const [
     { data: jobs, error: jobsError },
     { data: customers, error: customersError },
     { data: technicians, error: techniciansError },
   ] = await Promise.all([
-    supabase
-      .from("jobs")
-      .select(`
-        id,
-        title,
-        status,
-        service_date,
-        notes,
-        customer_id,
-        scheduled_start,
-        scheduled_end,
-        customers(id, name)
-      `)
-      .eq("user_id", ownerId)
-      .order("created_at", { ascending: false }),
+    jobsQuery,
 
     supabase
       .from("customers")
@@ -104,17 +136,19 @@ export default async function JobsPage() {
         </div>
 
         {/* Main layout */}
-        <div className="grid gap-6 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <JobsList jobs={jobList} />
+        <div className={`grid gap-6 ${isTechnician ? "" : "xl:grid-cols-3"}`}>
+          <div className={isTechnician ? "" : "xl:col-span-2"}>
+            <JobsList jobs={jobList} isTechnician={isTechnician} planName={planName} />
           </div>
 
-          <div>
-            <CreateJobFormGlobal
-              customers={customerList}
-              technicians={technicianList}
-            />
-          </div>
+          {!isTechnician && (
+            <div>
+              <CreateJobFormGlobal
+                customers={customerList}
+                technicians={technicianList}
+              />
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

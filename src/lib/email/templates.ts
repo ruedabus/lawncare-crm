@@ -473,3 +473,67 @@ export function technicianReminderEmail(d: TechReminderData): string {
 
   return emailShell(content, "#059669");
 }
+
+// ── Review Request Email ──────────────────────────────────────────────────────
+
+export type ReviewRequestEmailData = {
+  customerName: string;
+  businessName: string;
+  jobTitle: string;
+  reviewUrl: string;
+  beforePhotoUrl?: string | null;
+  afterPhotoUrl?: string | null;
+};
+
+export function buildReviewRequestEmail(d: ReviewRequestEmailData): string {
+  const photosSection = (d.beforePhotoUrl || d.afterPhotoUrl) ? `
+    <tr><td style="padding:0 32px 24px;">
+      <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Job Photos</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          ${d.beforePhotoUrl ? `
+          <td width="48%" style="padding-right:8px;">
+            <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;display:inline-block;">Before</p><br/>
+            <img src="${d.beforePhotoUrl}" alt="Before" width="100%" style="border-radius:10px;border:1px solid #e2e8f0;display:block;" />
+          </td>` : "<td></td>"}
+          ${d.afterPhotoUrl ? `
+          <td width="48%" style="padding-left:8px;">
+            <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#065f46;background:#d1fae5;border:1px solid #a7f3d0;border-radius:6px;padding:3px 8px;display:inline-block;">After</p><br/>
+            <img src="${d.afterPhotoUrl}" alt="After" width="100%" style="border-radius:10px;border:1px solid #e2e8f0;display:block;" />
+          </td>` : "<td></td>"}
+        </tr>
+      </table>
+    </td></tr>` : "";
+
+  const content = `
+    <tr><td style="padding:32px 32px 8px;">
+      <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+        How did we do, ${d.customerName.split(" ")[0]}? ⭐
+      </p>
+      <p style="margin:0;font-size:15px;color:#475569;line-height:1.6;">
+        Thank you for choosing <strong>${d.businessName}</strong>. We just completed your <strong>${d.jobTitle}</strong> and hope everything looks great!
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#475569;line-height:1.6;">
+        If you're happy with the work, it would mean the world to us if you left a quick review. It only takes 30 seconds and helps our small business grow.
+      </p>
+    </td></tr>
+
+    <tr><td style="padding:24px 32px;">
+      <a href="${d.reviewUrl}"
+         style="display:inline-block;background:#059669;color:#fff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;">
+        ⭐ Leave a Review
+      </a>
+    </td></tr>
+
+    ${photosSection}
+
+    <tr><td style="padding:0 32px 32px;">
+      <p style="margin:0;font-size:13px;color:#94a3b8;">
+        Thank you for your business — we look forward to serving you again!<br />
+        — The ${d.businessName} team
+      </p>
+    </td></tr>
+  `;
+
+  return emailShell(content, "#059669");
+}

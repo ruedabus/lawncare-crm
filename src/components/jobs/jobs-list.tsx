@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { JobActions } from "./job-actions";
+import { JobPhotos } from "./job-photos";
 
 type Job = {
   id: string;
@@ -18,6 +19,8 @@ type Job = {
 
 type JobsListProps = {
   jobs: Job[];
+  isTechnician?: boolean;
+  planName?: string;
 };
 
 const STATUS_TABS = [
@@ -42,7 +45,7 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
-export function JobsList({ jobs }: JobsListProps) {
+export function JobsList({ jobs, isTechnician = false, planName = "basic" }: JobsListProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -170,7 +173,9 @@ export function JobsList({ jobs }: JobsListProps) {
           <div className="px-6 py-14 text-center">
             <p className="text-sm font-medium text-slate-700">No jobs found</p>
             <p className="mt-1 text-sm text-slate-500">
-              Try changing the status filter or search term.
+              {isTechnician
+                ? "You have no assigned jobs yet. Check back later or contact your dispatcher."
+                : "Try changing the status filter or search term."}
             </p>
           </div>
         ) : (
@@ -223,9 +228,10 @@ export function JobsList({ jobs }: JobsListProps) {
                 </div>
 
                 <div className="shrink-0">
-                  <JobActions job={job} />
+                  <JobActions job={job} isTechnician={isTechnician} />
                 </div>
               </div>
+              <JobPhotos jobId={job.id} planName={planName} />
             </div>
           ))
         )}
