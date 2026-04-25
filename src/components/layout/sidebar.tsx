@@ -16,6 +16,7 @@ import {
   FunnelIcon,
   CalculatorIcon,
   ChartBarIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 
 const allNavItems = [
@@ -29,6 +30,7 @@ const allNavItems = [
   { href: "/invoices", label: "Invoices", icon: DocumentTextIcon, technicianVisible: false },
   { href: "/tasks", label: "Tasks", icon: CheckCircleIcon, technicianVisible: false },
   { href: "/reports", label: "Reports", icon: ChartBarIcon, technicianVisible: false },
+  { href: "/expenses", label: "Expenses", icon: BanknotesIcon, technicianVisible: false },
   { href: "/settings", label: "Settings", icon: Cog6ToothIcon, technicianVisible: false },
 ];
 

@@ -6,9 +6,34 @@ import { useRouter } from "next/navigation";
 type Customer = { id: string; name: string };
 type LineItem = { description: string; quantity: number; unit_price: number; amount: number };
 
+type LotSizeResult = {
+  sqft: number;
+  acres: number;
+  tier: "small" | "medium" | "large";
+  suggestedPrice: number;
+};
+
 const emptyItem = (): LineItem => ({ description: "", quantity: 1, unit_price: 0, amount: 0 });
 
-export function CreateEstimateForm({ customers }: { customers: Customer[] }) {
+const TIER_LABELS: Record<string, string> = {
+  small: "Small lot",
+  medium: "Medium lot",
+  large: "Large lot",
+};
+
+const TIER_COLORS: Record<string, string> = {
+  small: "bg-sky-50 text-sky-700 ring-sky-200",
+  medium: "bg-amber-50 text-amber-700 ring-amber-200",
+  large: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+};
+
+export function CreateEstimateForm({
+  customers,
+  planName,
+}: {
+  customers: Customer[];
+  planName?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,6 +46,13 @@ export function CreateEstimateForm({ customers }: { customers: Customer[] }) {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
 
+  // Smart Estimate state
+  const [sqftInput, setSqftInput] = useState("");
+  const [calculating, setCalculating] = useState(false);
+  const [lotResult, setLotResult] = useState<LotSizeResult | null>(null);
+  const [lotError, setLotError] = useState("");
+
+  const hasSmartEstimate = planName === "pro" || planName === "premier";
   const total = items.reduce((s, i) => s + i.amount, 0);
 
   function updateItem(index: number, field: keyof LineItem, value: string | number) {
@@ -46,6 +78,47 @@ export function CreateEstimateForm({ customers }: { customers: Customer[] }) {
     setItems((prev) => prev.filter((_, i) => i !== index));
   }
 
+  async function calculateLotSize() {
+    const sqft = Number(sqftInput);
+    if (!sqft || sqft <= 0) return;
+    setCalculating(true);
+    setLotResult(null);
+    setLotError("");
+    try {
+      const res = await fetch(`/api/lot-size?sqft=${sqft}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setLotError(data.error ?? "Could not calculate lot size tier.");
+      } else {
+        setLotResult(data);
+      }
+    } catch {
+      setLotError("Network error — please try again.");
+    } finally {
+      setCalculating(false);
+    }
+  }
+
+  function applyLotPrice() {
+    if (!lotResult) return;
+    const desc = `Lawn service — ${TIER_LABELS[lotResult.tier]} (${lotResult.sqft.toLocaleString()} sq ft)`;
+    const newItem: LineItem = {
+      description: desc,
+      quantity: 1,
+      unit_price: lotResult.suggestedPrice,
+      amount: lotResult.suggestedPrice,
+    };
+    setItems((prev) => {
+      // If there's a single empty item, replace it; otherwise append
+      if (prev.length === 1 && !prev[0].description && prev[0].unit_price === 0) {
+        return [newItem];
+      }
+      return [...prev, newItem];
+    });
+    setLotResult(null);
+    setSqftInput("");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!customerId) { setError("Please select a customer."); return; }
@@ -61,6 +134,7 @@ export function CreateEstimateForm({ customers }: { customers: Customer[] }) {
       setOpen(false);
       setCustomerId(""); setTitle(""); setDescription(""); setValidUntil(""); setNotes("");
       setItems([emptyItem()]);
+      setSqftInput(""); setLotResult(null); setLotError("");
       router.refresh();
     } else {
       const d = await res.json();
@@ -104,6 +178,81 @@ export function CreateEstimateForm({ customers }: { customers: Customer[] }) {
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-slate-700">Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional overview of the work…" className={inputCls} />
+        </div>
+
+        {/* Smart Estimate */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🏡</span>
+            <span className="text-sm font-semibold text-slate-800">Smart Estimate</span>
+            {hasSmartEstimate && (
+              <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">Active</span>
+            )}
+          </div>
+
+          {!hasSmartEstimate ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <span className="font-semibold">Pro feature.</span> Enter an address to auto-detect lot size and suggest a price based on your tiers. Available on Pro and Premier plans.
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500">
+                Enter the property&apos;s square footage to get a suggested price based on your configured tiers.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={sqftInput}
+                  onChange={(e) => { setSqftInput(e.target.value); setLotResult(null); setLotError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); calculateLotSize(); } }}
+                  placeholder="e.g. 8500"
+                  className={inputCls + " flex-1"}
+                />
+                <button
+                  type="button"
+                  onClick={calculateLotSize}
+                  disabled={calculating || !sqftInput || Number(sqftInput) <= 0}
+                  className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition"
+                >
+                  {calculating ? "Calculating…" : "Get Price"}
+                </button>
+              </div>
+
+              {lotError && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{lotError}</p>
+              )}
+
+              {lotResult && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-slate-900">{lotResult.sqft.toLocaleString()}</p>
+                      <p className="text-xs text-slate-500">sq ft</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-slate-900">{lotResult.acres}</p>
+                      <p className="text-xs text-slate-500">acres</p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${TIER_COLORS[lotResult.tier]}`}>
+                      {TIER_LABELS[lotResult.tier]}
+                    </span>
+                    <div className="ml-auto text-right">
+                      <p className="text-xs text-slate-500">Suggested price</p>
+                      <p className="text-xl font-bold text-emerald-700">${lotResult.suggestedPrice}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={applyLotPrice}
+                    className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition"
+                  >
+                    + Add to Line Items at ${lotResult.suggestedPrice}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Line items */}

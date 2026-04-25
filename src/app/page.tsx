@@ -56,6 +56,18 @@ const FEATURES = [
     description:
       "Run the business from the field with a phone-friendly experience your crew can actually use.",
   },
+  {
+    icon: "M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z",
+    title: "Expense Tracking",
+    description:
+      "Log fuel, blades, equipment, and every business cost. Premier users get full reports and a live P&L so you always know your real profit.",
+  },
+  {
+    icon: "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25",
+    title: "Smart Estimate",
+    description:
+      "Enter a property's square footage and get an instant price suggestion based on your own tiers — close more jobs faster.",
+  },
 ];
 
 const PLANS = [
@@ -94,6 +106,8 @@ const PLANS = [
       "Email tech reminders",
       "Before & after job photos",
       "Automated review requests",
+      "Smart Estimate (lot size pricing)",
+      "Expense tracking",
       "Lead source tracking",
       "Priority support",
     ],
@@ -113,6 +127,9 @@ const PLANS = [
       "Unlimited team users",
       "Before & after job photos",
       "Automated review requests",
+      "Smart Estimate (lot size pricing)",
+      "Expense tracking + reports",
+      "P&L dashboard (revenue vs. expenses)",
       "Advanced reporting",
       "Multiple QR codes",
       "Priority support",
@@ -154,7 +171,7 @@ export default function LandingPage() {
             <img
               src="/YardPilot-logo.png"
               alt="YardPilot"
-              className="h-20 w-auto sm:h-24"
+              className="h-28 w-auto sm:h-36"
             />
           </Link>
 
@@ -185,52 +202,103 @@ export default function LandingPage() {
         </div>
 
         <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 lg:px-8 lg:pb-24 lg:pt-20">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Built for lawn care professionals
+
+          {/* 3-column hero: image | text | image */}
+          <div className="flex items-center gap-8 xl:gap-12">
+
+            {/* Left photo */}
+            <div className="hidden lg:block lg:w-64 xl:w-72 shrink-0">
+              <div className="relative -rotate-2 overflow-hidden rounded-3xl shadow-[0_30px_80px_rgba(15,23,42,0.18)] ring-4 ring-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/hero-worker.png"
+                  alt="Lawn care professional"
+                  className="h-[480px] w-full object-cover xl:h-[540px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
+              </div>
+              {/* Floating badge */}
+              <div className="ml-4 mt-4 inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 shadow-md">
+                <span className="text-lg">⭐</span>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">5-star rated</p>
+                  <p className="text-[10px] text-slate-500">by lawn pros</p>
+                </div>
+              </div>
             </div>
 
-            <h1 className="mx-auto max-w-4xl text-5xl font-extrabold leading-[0.95] tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
-              Win more jobs.
-              <span className="block text-emerald-600">Get paid faster.</span>
-              <span className="block text-slate-950">Stay organized.</span>
-            </h1>
+            {/* Center: main text content */}
+            <div className="flex-1 text-center">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm backdrop-blur">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Built for lawn care professionals
+              </div>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-              YardPilot helps lawn care businesses manage leads, customers,
-              scheduling, invoices, and payments in one clean system.
-            </p>
+              <h1 className="text-5xl font-extrabold leading-[0.95] tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-6xl xl:text-7xl">
+                Win more jobs.
+                <span className="block text-emerald-600">Get paid faster.</span>
+                <span className="block text-slate-950">Stay organized.</span>
+              </h1>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/start-trial"
-                className="inline-flex min-w-[190px] items-center justify-center rounded-2xl bg-emerald-600 px-7 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(16,185,129,0.28)] transition hover:bg-emerald-500"
-              >
-                Start free trial
-              </Link>
-              <a
-                href="#demo"
-                className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-7 py-4 text-base font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
-              >
-                Watch demo
-              </a>
+              <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-600">
+                YardPilot helps lawn care businesses manage leads, customers,
+                scheduling, invoices, and payments in one clean system.
+              </p>
+
+              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Link
+                  href="/start-trial"
+                  className="inline-flex min-w-[190px] items-center justify-center rounded-2xl bg-emerald-600 px-7 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(16,185,129,0.28)] transition hover:bg-emerald-500"
+                >
+                  Start free trial
+                </Link>
+                <a
+                  href="#demo"
+                  className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-7 py-4 text-base font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+                >
+                  Watch demo
+                </a>
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  14-day free trial
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  Set up in minutes
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  Cancel anytime
+                </span>
+              </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-4 w-4 text-emerald-500" />
-                14-day free trial
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-4 w-4 text-emerald-500" />
-                Set up in minutes
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-4 w-4 text-emerald-500" />
-                Cancel anytime
-              </span>
+            {/* Right photo */}
+            <div className="hidden lg:block lg:w-64 xl:w-72 shrink-0">
+              <div className="relative rotate-2 overflow-hidden rounded-3xl shadow-[0_30px_80px_rgba(15,23,42,0.18)] ring-4 ring-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/hero-mowing.png"
+                  alt="Perfectly mowed lawn"
+                  className="h-[480px] w-full object-cover xl:h-[540px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
+              </div>
+              {/* Floating badge */}
+              <div className="mr-4 mt-4 flex justify-end">
+                <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 shadow-md">
+                  <span className="text-lg">🌿</span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">500+ crews</p>
+                    <p className="text-[10px] text-slate-500">trust YardPilot</p>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
 
           {/* Real product preview */}
@@ -410,7 +478,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {FEATURES.map((f) => (
               <div
                 key={f.title}

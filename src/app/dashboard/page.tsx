@@ -9,6 +9,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import { getTeamContext } from "../../lib/team";
+import { getUserPlanInfo } from "../../lib/plan-guard";
 import { AppShell } from "../../components/layout/app-shell";
 
 // ── Weather helpers ──────────────────────────────────────────────────────────
@@ -386,6 +387,18 @@ export default async function DashboardPage() {
       ? Math.round(((paidInvoices ?? 0) / totalInvoices) * 100)
       : 0;
 
+  // ── Expense snapshot (Premier only) ─────────────────────────────────────
+  const { config: planConfig } = await getUserPlanInfo(ownerId);
+  let monthlyExpenses = 0;
+  if (!isTechnician && planConfig.expenseReports) {
+    const { data: expenseRows } = await supabase
+      .from("expenses")
+      .select("amount")
+      .eq("user_id", ownerId)
+      .gte("date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
+    monthlyExpenses = (expenseRows ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  }
+
   // ── Weather (Open-Meteo — free, no key) ─────────────────────────────────
   // Pull location from saved settings, fall back to Brooksville FL
   const { data: locationSettings } = await supabase
@@ -557,10 +570,13 @@ if (wRes.ok) {
       </div>
     </div>
 
-    <div className="mt-6 grid gap-4 md:grid-cols-3">
+    <div className={`mt-6 grid gap-4 ${planConfig.expenseReports ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
       <MiniStat label="Revenue" value={`$${monthlyRevenue.toLocaleString()}`} />
       <MiniStat label="Jobs" value={String(activeJobs ?? 0)} />
       <MiniStat label="Unpaid" value={String(unpaidInvoices ?? 0)} />
+      {planConfig.expenseReports && (
+        <MiniStat label="Net" value={`$${(monthlyRevenue - monthlyExpenses).toLocaleString()}`} highlight={monthlyRevenue - monthlyExpenses >= 0} />
+      )}
     </div>
 
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -630,7 +646,7 @@ if (wRes.ok) {
 </section>
         )}
 
-        <section className="grid gap-6 lg:grid-cols-3">
+        <section className={`grid gap-6 ${planConfig.expenseReports && !isTechnician ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
           {/* Recent Activity */}
           <PanelCard title="Recent Activity">
             <div className="space-y-2 text-sm text-slate-600">
@@ -674,6 +690,30 @@ if (wRes.ok) {
               </p>
             </div>
           </PanelCard>}
+
+          {/* Expense Snapshot — Premier only */}
+          {planConfig.expenseReports && !isTechnician && (
+            <PanelCard title="Expense Snapshot">
+              <div className="space-y-4">
+                <div className="rounded-xl bg-rose-50 px-4 py-3 text-center">
+                  <p className="text-2xl font-bold text-rose-700">${monthlyExpenses.toFixed(2)}</p>
+                  <p className="text-xs text-rose-500 mt-0.5">Spent this month</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 px-4 py-3 text-center">
+                  <p className={`text-2xl font-bold ${monthlyRevenue - monthlyExpenses >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                    ${(monthlyRevenue - monthlyExpenses).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-0.5">Net this month</p>
+                </div>
+                <Link
+                  href="/expenses"
+                  className="block rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+                >
+                  View all expenses →
+                </Link>
+              </div>
+            </PanelCard>
+          )}
 
           {/* Weather */}
          <PanelCard title="Weather">
@@ -852,13 +892,11 @@ function ActivityItem({ text, time }: { text: string; time: string }) {
 
 /* 👇 ADD IT RIGHT HERE 👇 */
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-  {label}
-</p>
-      <p className="mt-2 text-xl font-bold text-slate-900">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={`mt-2 text-xl font-bold ${highlight === false ? "text-red-600" : "text-slate-900"}`}>{value}</p>
     </div>
   );
 }

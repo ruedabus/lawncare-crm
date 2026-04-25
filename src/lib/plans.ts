@@ -14,6 +14,9 @@ export interface PlanConfig {
   jobPhotos: boolean;              // before/after photo uploads on jobs
   reviewRequests: boolean;         // auto review request email on job completion
   weatherRescheduling: boolean;    // auto weather-aware rescheduling (coming soon)
+  smartEstimate: boolean;          // lot size lookup + auto-price on estimates
+  expenseLogging: boolean;         // log business expenses (Pro + Premier)
+  expenseReports: boolean;         // expense reports + P&L (Premier only)
 }
 
 export const PLANS: Record<PlanName, PlanConfig> = {
@@ -28,6 +31,9 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     jobPhotos: false,
     reviewRequests: false,
     weatherRescheduling: false,
+    smartEstimate: false,
+    expenseLogging: false,
+    expenseReports: false,
   },
   pro: {
     customerLimit: 100,
@@ -40,6 +46,9 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     jobPhotos: true,
     reviewRequests: true,
     weatherRescheduling: false,
+    smartEstimate: true,
+    expenseLogging: true,
+    expenseReports: false,
   },
   premier: {
     customerLimit: null,
@@ -51,7 +60,10 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     prioritySupport: true,
     jobPhotos: true,
     reviewRequests: true,
-    weatherRescheduling: true,   // will be built next session
+    weatherRescheduling: true,
+    smartEstimate: true,
+    expenseLogging: true,
+    expenseReports: true,
   },
 };
 

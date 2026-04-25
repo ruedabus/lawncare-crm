@@ -65,7 +65,7 @@ export default async function EstimatesPage() {
               Total pipeline value: <span className="font-medium text-slate-700">${totalValue.toFixed(2)}</span>
             </p>
           </div>
-          <CreateEstimateForm customers={customers ?? []} />
+          <CreateEstimateForm customers={customers ?? []} planName={planName} />
         </div>
 
         <EstimatesList estimates={estimates} />

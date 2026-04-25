@@ -27,6 +27,11 @@ type Settings = {
   plan_name?: string | null;
   trial_ends_at?: string | null;
   current_period_end?: string | null;
+  estimate_small_price?: number | null;
+  estimate_medium_price?: number | null;
+  estimate_large_price?: number | null;
+  estimate_small_max_sqft?: number | null;
+  estimate_large_min_sqft?: number | null;
 };
 
 type UserInfo = {
@@ -159,6 +164,7 @@ function BusinessProfileTab({ settings }: { settings: Settings }) {
   }
 
   return (
+    <>
     <SettingsCard
       title="Business Profile"
       description="This information appears on invoices and throughout the app."
@@ -249,6 +255,150 @@ function BusinessProfileTab({ settings }: { settings: Settings }) {
 
         <SaveRow status={status} errorMsg={errorMsg} />
       </form>
+    </SettingsCard>
+
+    <SmartEstimateSettings settings={settings} />
+    </>
+  );
+}
+
+// ── Smart Estimate pricing tiers ─────────────────────────────────────────────
+
+function SmartEstimateSettings({ settings }: { settings: Settings }) {
+  const isLocked = settings.plan_name !== "pro" && settings.plan_name !== "premier";
+
+  const [form, setForm] = useState({
+    estimate_small_price: settings.estimate_small_price ?? 45,
+    estimate_medium_price: settings.estimate_medium_price ?? 65,
+    estimate_large_price: settings.estimate_large_price ?? 95,
+    estimate_small_max_sqft: settings.estimate_small_max_sqft ?? 5000,
+    estimate_large_min_sqft: settings.estimate_large_min_sqft ?? 15000,
+  });
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("saving");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Save failed");
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Save failed");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <SettingsCard
+      title="Smart Estimate — Lot Size Pricing"
+      description="Set your prices per lot tier. When you look up an address on an estimate, YardPilot fetches the lot size and suggests the right price automatically."
+    >
+      {isLocked ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-amber-800">Smart Estimate — Pro &amp; Premier</p>
+            <p className="mt-0.5 text-xs text-amber-700">
+              Type in any service address and instantly get the lot size and a suggested price. Available on Pro and Premier plans.
+            </p>
+            <a href="/settings?tab=billing" className="mt-1.5 inline-block text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900">
+              Upgrade your plan →
+            </a>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-6">
+          {/* Lot size thresholds */}
+          <div>
+            <p className="mb-3 text-sm font-medium text-slate-700">Lot Size Thresholds (sq ft)</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Small lot — max sq ft">
+                <input
+                  type="number"
+                  min={1000}
+                  value={form.estimate_small_max_sqft}
+                  onChange={(e) => setForm({ ...form, estimate_small_max_sqft: Number(e.target.value) })}
+                  className={inputCls}
+                />
+                <p className="mt-1 text-xs text-slate-400">Lots under this size are &quot;small&quot;</p>
+              </Field>
+              <Field label="Large lot — min sq ft">
+                <input
+                  type="number"
+                  min={1000}
+                  value={form.estimate_large_min_sqft}
+                  onChange={(e) => setForm({ ...form, estimate_large_min_sqft: Number(e.target.value) })}
+                  className={inputCls}
+                />
+                <p className="mt-1 text-xs text-slate-400">Lots at or above this size are &quot;large&quot;</p>
+              </Field>
+            </div>
+          </div>
+
+          {/* Price tiers */}
+          <div>
+            <p className="mb-3 text-sm font-medium text-slate-700">Suggested Prices ($)</p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Small</p>
+                <p className="mb-2 text-xs text-slate-400">Under {form.estimate_small_max_sqft.toLocaleString()} sq ft</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.estimate_small_price}
+                    onChange={(e) => setForm({ ...form, estimate_small_price: Number(e.target.value) })}
+                    className="w-full rounded-lg border border-slate-200 bg-white pl-7 pr-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-600">Medium</p>
+                <p className="mb-2 text-xs text-slate-400">{form.estimate_small_max_sqft.toLocaleString()} – {form.estimate_large_min_sqft.toLocaleString()} sq ft</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.estimate_medium_price}
+                    onChange={(e) => setForm({ ...form, estimate_medium_price: Number(e.target.value) })}
+                    className="w-full rounded-lg border border-emerald-200 bg-white pl-7 pr-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Large</p>
+                <p className="mb-2 text-xs text-slate-400">{form.estimate_large_min_sqft.toLocaleString()}+ sq ft</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.estimate_large_price}
+                    onChange={(e) => setForm({ ...form, estimate_large_price: Number(e.target.value) })}
+                    className="w-full rounded-lg border border-slate-200 bg-white pl-7 pr-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <SaveRow status={status} errorMsg={errorMsg} />
+        </form>
+      )}
     </SettingsCard>
   );
 }
