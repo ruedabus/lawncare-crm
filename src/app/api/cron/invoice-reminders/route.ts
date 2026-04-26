@@ -1,25 +1,27 @@
 import { NextResponse } from "next/server";
-import { createClient } from "../../../../lib/supabase/server";
+import { createServiceClient } from "../../../../lib/supabase/server";
 import { sendEmail } from "../../../../lib/email/send";
 import { buildInvoiceEmailData } from "../../../../lib/email/invoice-email-data";
 import { invoiceReminderEmail } from "../../../../lib/email/templates";
+import { getPlanConfig } from "../../../../lib/plans";
 
 /**
  * GET /api/cron/invoice-reminders
  *
- * Sends payment reminder emails for unpaid invoices:
- *   - "upcoming"  — due in exactly 3 days
- *   - "due_today" — due today
- *   - "overdue"   — due 1, 3, or 7 days ago (avoids spamming daily)
+ * Sends automated payment reminder emails for unpaid invoices:
+ *   - 7-day reminder  — invoice created 7+ days ago, never reminded at 7 days
+ *   - 14-day reminder — invoice created 14+ days ago, never reminded at 14 days
  *
- * Called automatically by Vercel Cron (see vercel.json) every day at 8 AM.
- * Can also be triggered manually by hitting the URL with the secret header.
+ * Each reminder fires exactly once per invoice (tracked via reminder_7_sent_at
+ * and reminder_14_sent_at columns on the invoices table).
  *
- * Security: requires the CRON_SECRET env var as a Bearer token
- * so random callers cannot trigger mass emails.
+ * Only runs for owners on Pro or Premier plans who have payment_reminders_enabled = true.
+ *
+ * Called automatically by Vercel Cron (vercel.json) every day at 8 AM ET.
+ * Secured via CRON_SECRET env var.
  */
 export async function GET(request: Request) {
-  // Verify cron secret (set CRON_SECRET in your .env / Vercel env vars)
+  // ── Auth ───────────────────────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const auth = request.headers.get("authorization") ?? "";
@@ -28,108 +30,119 @@ export async function GET(request: Request) {
     }
   }
 
-  const supabase = await createClient();
+  const supabase = createServiceClient();
+  const admin = supabase; // service client bypasses RLS for all queries
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
 
-  function isoDate(d: Date) {
-    return d.toISOString().slice(0, 10);
+  function daysAgo(n: number): string {
+    const d = new Date(now);
+    d.setDate(d.getDate() - n);
+    return d.toISOString();
   }
 
-  const in3Days = new Date(today);
-  in3Days.setDate(today.getDate() + 3);
+  // ── Find invoices needing 7-day reminder ───────────────────────────────────
+  const { data: need7 } = await admin
+    .from("invoices")
+    .select("id, user_id, created_at")
+    .eq("status", "unpaid")
+    .is("reminder_7_sent_at", null)
+    .lte("created_at", daysAgo(7));
 
-  const minus1 = new Date(today);
-  minus1.setDate(today.getDate() - 1);
-  const minus3 = new Date(today);
-  minus3.setDate(today.getDate() - 3);
-  const minus7 = new Date(today);
-  minus7.setDate(today.getDate() - 7);
+  // ── Find invoices needing 14-day reminder ──────────────────────────────────
+  const { data: need14 } = await admin
+    .from("invoices")
+    .select("id, user_id, created_at")
+    .eq("status", "unpaid")
+    .is("reminder_14_sent_at", null)
+    .lte("created_at", daysAgo(14));
 
-  // Fetch all unpaid invoices with a due_date in our target windows
-  const targetDates = [
-    isoDate(in3Days),   // upcoming
-    isoDate(today),     // due today
-    isoDate(minus1),    // 1 day overdue
-    isoDate(minus3),    // 3 days overdue
-    isoDate(minus7),    // 7 days overdue
+  // ── Load all owner settings in one query ───────────────────────────────────
+  const allOwnerIds = [
+    ...new Set([
+      ...(need7 ?? []).map((i) => i.user_id as string),
+      ...(need14 ?? []).map((i) => i.user_id as string),
+    ]),
   ];
 
-  const { data: invoices, error } = await supabase
-    .from("invoices")
-    .select("id, due_date, customer_id, customers(id, email)")
-    .eq("status", "unpaid")
-    .in("due_date", targetDates);
-
-  if (error) {
-    console.error("[cron] invoice fetch error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (allOwnerIds.length === 0) {
+    return NextResponse.json({ sent: 0, message: "No invoices need reminders." });
   }
 
-  if (!invoices || invoices.length === 0) {
-    return NextResponse.json({ sent: 0, message: "No invoices to remind." });
-  }
-
-  // We need a user_id to look up business settings.
-  // Use the owner of each invoice's customer record.
-  // For a single-owner app this is always the same user, but we fetch it properly.
-  const { data: settingsRows } = await supabase
+  const { data: settingsRows } = await admin
     .from("settings")
-    .select("user_id, business_name, business_email");
+    .select("user_id, plan_name, payment_reminders_enabled")
+    .in("user_id", allOwnerIds);
 
-  const ownerUserId = settingsRows?.[0]?.user_id as string | undefined;
-  if (!ownerUserId) {
-    return NextResponse.json(
-      { error: "No settings row found — cannot look up business info." },
-      { status: 500 }
-    );
+  const settingsMap = new Map(
+    (settingsRows ?? []).map((s) => [s.user_id as string, s])
+  );
+
+  // ── Helper: check if owner is eligible ────────────────────────────────────
+  function ownerEligible(ownerId: string): boolean {
+    const s = settingsMap.get(ownerId);
+    if (!s) return false;
+    // payment_reminders_enabled defaults to true if not set
+    if (s.payment_reminders_enabled === false) return false;
+    const config = getPlanConfig(s.plan_name);
+    return config.paymentReminders;
   }
 
   let sent = 0;
   const errors: string[] = [];
 
-  for (const inv of invoices) {
-    const rawCustomer = inv.customers;
-    const customer = (Array.isArray(rawCustomer) ? rawCustomer[0] : rawCustomer) as { id: string; email: string | null } | null;
-    if (!customer?.email) continue; // skip — no email on file
+  // ── Send 7-day reminders ───────────────────────────────────────────────────
+  for (const inv of need7 ?? []) {
+    if (!ownerEligible(inv.user_id)) continue;
 
-    const dueDate = inv.due_date as string;
-    let type: "upcoming" | "due_today" | "overdue";
-
-    if (dueDate === isoDate(in3Days)) {
-      type = "upcoming";
-    } else if (dueDate === isoDate(today)) {
-      type = "due_today";
-    } else {
-      type = "overdue";
-    }
-
-    const emailData = await buildInvoiceEmailData(supabase, inv.id, ownerUserId);
+    const emailData = await buildInvoiceEmailData(supabase, inv.id, inv.user_id);
     if (!emailData) continue;
-
-    const subject =
-      type === "upcoming"
-        ? `Reminder: Invoice ${emailData.invoiceNumber} due in 3 days`
-        : type === "due_today"
-        ? `Your invoice ${emailData.invoiceNumber} is due today`
-        : `Overdue: Invoice ${emailData.invoiceNumber} needs attention`;
 
     const result = await sendEmail({
       to: emailData.customerEmail,
       fromName: emailData.businessName,
-      subject,
-      html: invoiceReminderEmail(emailData, type),
+      subject: `Friendly reminder: Invoice ${emailData.invoiceNumber} is unpaid`,
+      html: invoiceReminderEmail(emailData, "overdue", 7),
       replyTo: emailData.businessEmail || undefined,
     });
 
     if (result.ok) {
       sent++;
+      await admin
+        .from("invoices")
+        .update({ reminder_7_sent_at: now.toISOString() })
+        .eq("id", inv.id);
     } else {
-      errors.push(`${inv.id}: ${result.error}`);
+      errors.push(`7d ${inv.id}: ${result.error}`);
     }
   }
 
-  console.log(`[cron] invoice-reminders: sent=${sent} errors=${errors.length}`);
+  // ── Send 14-day reminders ──────────────────────────────────────────────────
+  for (const inv of need14 ?? []) {
+    if (!ownerEligible(inv.user_id)) continue;
+
+    const emailData = await buildInvoiceEmailData(supabase, inv.id, inv.user_id);
+    if (!emailData) continue;
+
+    const result = await sendEmail({
+      to: emailData.customerEmail,
+      fromName: emailData.businessName,
+      subject: `Second notice: Invoice ${emailData.invoiceNumber} remains unpaid`,
+      html: invoiceReminderEmail(emailData, "overdue", 14),
+      replyTo: emailData.businessEmail || undefined,
+    });
+
+    if (result.ok) {
+      sent++;
+      await admin
+        .from("invoices")
+        .update({ reminder_14_sent_at: now.toISOString() })
+        .eq("id", inv.id);
+    } else {
+      errors.push(`14d ${inv.id}: ${result.error}`);
+    }
+  }
+
+  console.log(`[cron] payment-reminders: sent=${sent} errors=${errors.length}`);
   return NextResponse.json({ sent, errors });
 }

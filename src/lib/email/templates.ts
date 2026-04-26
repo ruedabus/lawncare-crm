@@ -151,20 +151,25 @@ export function invoiceCreatedEmail(d: InvoiceEmailData): string {
  */
 export function invoiceReminderEmail(
   d: InvoiceEmailData,
-  type: "upcoming" | "due_today" | "overdue"
+  type: "upcoming" | "due_today" | "overdue",
+  daysUnpaid?: number
 ): string {
   const accentColor = type === "overdue" ? "#dc2626" : "#d97706";
 
   const headings = {
     upcoming: "Friendly payment reminder",
     due_today: "Your invoice is due today",
-    overdue: "Your invoice is overdue",
+    overdue: daysUnpaid === 14
+      ? "Second notice — invoice still unpaid"
+      : "Friendly reminder — invoice unpaid",
   };
 
   const subtext = {
     upcoming: `Just a heads-up — your invoice from ${d.businessName} is due soon.`,
     due_today: `Your invoice from ${d.businessName} is due today. Please arrange payment at your earliest convenience.`,
-    overdue: `Your invoice from ${d.businessName} is past due. Please arrange payment as soon as possible.`,
+    overdue: daysUnpaid === 14
+      ? `This is a second notice. Your invoice from ${d.businessName} has been unpaid for 14 days. Please arrange payment as soon as possible.`
+      : `Just a friendly reminder that your invoice from ${d.businessName} has been unpaid for 7 days. Please arrange payment at your earliest convenience.`,
   };
 
   const printUrl = d.appUrl

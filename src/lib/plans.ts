@@ -17,6 +17,7 @@ export interface PlanConfig {
   smartEstimate: boolean;          // lot size lookup + auto-price on estimates
   expenseLogging: boolean;         // log business expenses (Pro + Premier)
   expenseReports: boolean;         // expense reports + P&L (Premier only)
+  paymentReminders: boolean;       // automated 7 & 14-day unpaid invoice reminders (Pro + Premier)
 }
 
 export const PLANS: Record<PlanName, PlanConfig> = {
@@ -34,6 +35,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     smartEstimate: false,
     expenseLogging: false,
     expenseReports: false,
+    paymentReminders: false,
   },
   pro: {
     customerLimit: 100,
@@ -49,6 +51,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     smartEstimate: true,
     expenseLogging: true,
     expenseReports: false,
+    paymentReminders: true,
   },
   premier: {
     customerLimit: null,
@@ -64,6 +67,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     smartEstimate: true,
     expenseLogging: true,
     expenseReports: true,
+    paymentReminders: true,
   },
 };
 

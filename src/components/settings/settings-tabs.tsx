@@ -19,6 +19,7 @@ type Settings = {
   notify_unpaid_invoice?: boolean;
   notify_upcoming_task?: boolean;
   notify_new_lead?: boolean;
+  payment_reminders_enabled?: boolean;
   lead_capture_slug?: string;
   stripe_account_id?: string | null;
   stripe_customer_id?: string | null;
@@ -643,11 +644,15 @@ function ServiceLocationTab({ settings }: { settings: Settings }) {
 // ── Notifications ────────────────────────────────────────────────────────────
 
 function NotificationsTab({ settings }: { settings: Settings }) {
+  const planName = settings.plan_name ?? "basic";
+  const hasPaymentReminders = planName === "pro" || planName === "premier";
+
   const [form, setForm] = useState({
     notify_new_job: settings.notify_new_job ?? true,
     notify_unpaid_invoice: settings.notify_unpaid_invoice ?? true,
     notify_upcoming_task: settings.notify_upcoming_task ?? true,
     notify_new_lead: settings.notify_new_lead ?? true,
+    payment_reminders_enabled: settings.payment_reminders_enabled ?? true,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -703,6 +708,40 @@ function NotificationsTab({ settings }: { settings: Settings }) {
           checked={form.notify_new_lead}
           onChange={(v) => setForm({ ...form, notify_new_lead: v })}
         />
+
+        {/* ── Automated Payment Reminders (Pro + Premier) ── */}
+        <div className="border-t border-slate-100 pt-4">
+          {hasPaymentReminders ? (
+            <Toggle
+              label="Automated Payment Reminders"
+              description="Automatically email customers a friendly reminder at 7 days and a second notice at 14 days when an invoice remains unpaid."
+              checked={form.payment_reminders_enabled}
+              onChange={(v) => setForm({ ...form, payment_reminders_enabled: v })}
+            />
+          ) : (
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 opacity-60">
+              <div className="mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-300">
+                <span className="h-4 w-4 translate-x-0.5 rounded-full bg-white shadow" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700">
+                  Automated Payment Reminders
+                  <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    Pro+
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Auto-send 7-day and 14-day follow-up emails for unpaid invoices.{" "}
+                  <a href="/settings?tab=billing" className="font-medium text-emerald-600 hover:underline">
+                    Upgrade to Pro
+                  </a>{" "}
+                  to enable.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
         <SaveRow status={status} errorMsg={errorMsg} />
       </form>
     </SettingsCard>
