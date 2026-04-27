@@ -399,6 +399,29 @@ export default async function DashboardPage() {
     monthlyExpenses = (expenseRows ?? []).reduce((s, r) => s + Number(r.amount), 0);
   }
 
+  // ── Weather-flagged jobs (Premier only) ─────────────────────────────────
+  let weatherFlaggedJobs: { id: string; title: string; service_date: string | null; weather_flag_reason: string | null; customer_name: string | null }[] = [];
+  if (!isTechnician && planConfig.weatherRescheduling) {
+    const { data: flaggedRows } = await supabase
+      .from("jobs")
+      .select("id, title, service_date, weather_flag_reason, customers(name)")
+      .eq("user_id", ownerId)
+      .eq("weather_flagged", true)
+      .in("status", ["scheduled", "in_progress"])
+      .order("service_date", { ascending: true })
+      .limit(5);
+
+    weatherFlaggedJobs = (flaggedRows ?? []).map((j) => ({
+      id: j.id,
+      title: j.title,
+      service_date: j.service_date,
+      weather_flag_reason: j.weather_flag_reason,
+      customer_name: Array.isArray(j.customers)
+        ? (j.customers[0]?.name ?? null)
+        : ((j.customers as { name?: string } | null)?.name ?? null),
+    }));
+  }
+
   // ── Weather (Open-Meteo — free, no key) ─────────────────────────────────
   // Pull location from saved settings, fall back to Brooksville FL
   const { data: locationSettings } = await supabase
@@ -644,6 +667,38 @@ if (wRes.ok) {
     </PanelCard>
   </div>
 </section>
+        )}
+
+        {/* ── Weather Alerts Banner (Premier only) ── */}
+        {planConfig.weatherRescheduling && !isTechnician && weatherFlaggedJobs.length > 0 && (
+          <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-blue-900">⛈️ Weather Alerts — Jobs That May Need Rescheduling</h3>
+              <Link href="/jobs" className="text-xs font-medium text-blue-600 hover:text-blue-800">
+                View all jobs →
+              </Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {weatherFlaggedJobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href="/jobs"
+                  className="block rounded-xl border border-blue-200 bg-white px-4 py-3 hover:bg-blue-100 transition shadow-sm"
+                >
+                  <p className="text-sm font-semibold text-slate-800 truncate">{job.title}</p>
+                  {job.customer_name && (
+                    <p className="text-xs text-slate-500 mt-0.5">{job.customer_name}</p>
+                  )}
+                  {job.service_date && (
+                    <p className="text-xs text-blue-700 mt-0.5 font-medium">{job.service_date}</p>
+                  )}
+                  {job.weather_flag_reason && (
+                    <p className="text-xs text-blue-600 mt-1 leading-snug">{job.weather_flag_reason}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
         <section className={`grid gap-6 ${planConfig.expenseReports && !isTechnician ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>

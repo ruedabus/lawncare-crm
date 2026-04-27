@@ -17,6 +17,8 @@ type Job = {
   scheduled_end?: string | null;
   template_id?: string | null;
   template_default_amount?: number | null;
+  weather_flagged?: boolean | null;
+  weather_flag_reason?: string | null;
 };
 
 type JobsListProps = {
@@ -285,6 +287,14 @@ export function JobsList({ jobs, isTechnician = false, planName = "basic" }: Job
                     >
                       {STATUS_LABELS[job.status] ?? job.status}
                     </span>
+                    {job.weather_flagged && (
+                      <span
+                        title={job.weather_flag_reason ?? "Weather alert"}
+                        className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200"
+                      >
+                        ⛈️ Weather alert
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">

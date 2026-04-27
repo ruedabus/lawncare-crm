@@ -49,6 +49,8 @@ export default async function JobsPage() {
       customer_id,
       scheduled_start,
       scheduled_end,
+      weather_flagged,
+      weather_flag_reason,
       customers(id, name)
     `)
     .eq("user_id", ownerId)
@@ -94,10 +96,12 @@ export default async function JobsPage() {
     notes: job.notes,
     customer_id: job.customer_id,
     customer_name: Array.isArray(job.customers)
-  ? job.customers[0]?.name ?? null
-  : null,
+      ? job.customers[0]?.name ?? null
+      : null,
     scheduled_start: job.scheduled_start,
     scheduled_end: job.scheduled_end,
+    weather_flagged: job.weather_flagged ?? false,
+    weather_flag_reason: job.weather_flag_reason ?? null,
   }));
 
   const customerList = (customers ?? []).map((c) => ({

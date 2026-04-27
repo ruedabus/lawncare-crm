@@ -542,3 +542,70 @@ export function buildReviewRequestEmail(d: ReviewRequestEmailData): string {
 
   return emailShell(content, "#059669");
 }
+
+// ── Weather Alert Email ───────────────────────────────────────────────────────
+
+export type WeatherAlertJob = {
+  title: string;
+  serviceDate: string;   // YYYY-MM-DD
+  customerName: string;
+  weatherSummary: string; // e.g. "Rain (65%), High winds (28 mph)"
+};
+
+export type WeatherAlertEmailData = {
+  businessName: string;
+  ownerEmail: string;
+  jobs: WeatherAlertJob[];
+  appUrl?: string;
+};
+
+function fmtAlertDate(dateStr: string) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1).toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+  });
+}
+
+export function weatherAlertEmail(data: WeatherAlertEmailData): string {
+  const { businessName, jobs, appUrl = "https://app.yardpilot.net" } = data;
+  const count = jobs.length;
+
+  const jobRows = jobs.map((job) => `
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+        <p style="margin:0;font-size:14px;font-weight:600;color:#0f172a;">${job.title}</p>
+        <p style="margin:2px 0 0;font-size:13px;color:#64748b;">${job.customerName} &middot; ${fmtAlertDate(job.serviceDate)}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#dc2626;font-weight:500;">&#9888;&#65039; ${job.weatherSummary}</p>
+      </td>
+    </tr>
+  `).join("");
+
+  const content = `
+    <tr><td style="padding:32px 32px 8px;">
+      <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+        Weather Alert &mdash; ${count} Job${count !== 1 ? "s" : ""} at Risk
+      </p>
+      <p style="margin:0;font-size:15px;color:#475569;line-height:1.6;">
+        Hi ${businessName} team, our daily weather check flagged <strong>${count} upcoming job${count !== 1 ? "s" : ""}</strong> that may be affected by bad weather. Review and reschedule as needed.
+      </p>
+    </td></tr>
+
+    <tr><td style="padding:16px 32px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        ${jobRows}
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:8px 32px 32px;">
+      <a href="${appUrl}/jobs"
+         style="display:inline-block;background:#0f172a;color:#fff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;text-decoration:none;">
+        View Jobs &rarr;
+      </a>
+      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8;">
+        These jobs have been flagged in YardPilot so you can easily find them. No jobs have been automatically moved.
+      </p>
+    </td></tr>
+  `;
+
+  return emailShell(content, "#1e40af");
+}
