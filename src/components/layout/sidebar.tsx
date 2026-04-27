@@ -17,6 +17,7 @@ import {
   CalculatorIcon,
   ChartBarIcon,
   BanknotesIcon,
+  RectangleStackIcon,
 } from "@heroicons/react/24/outline";
 
 const allNavItems = [
@@ -25,6 +26,7 @@ const allNavItems = [
   { href: "/leads", label: "Leads", icon: FunnelIcon, technicianVisible: false },
   { href: "/estimates", label: "Estimates", icon: CalculatorIcon, technicianVisible: false },
   { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon, technicianVisible: true },
+  { href: "/job-templates", label: "Job Templates", icon: RectangleStackIcon, technicianVisible: false },
   { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon, technicianVisible: true },
   { href: "/technicians", label: "Technicians", icon: WrenchScrewdriverIcon, technicianVisible: false },
   { href: "/invoices", label: "Invoices", icon: DocumentTextIcon, technicianVisible: false },

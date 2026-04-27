@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Technician = {
   id: string;
@@ -9,39 +9,21 @@ type Technician = {
   color?: string | null;
 };
 
+type JobTemplate = {
+  id: string;
+  title: string;
+  notes: string | null;
+  estimated_duration_minutes: number | null;
+  line_items: { description: string; unit_price: number; quantity: number }[];
+};
+
 type CreateJobFormProps = {
   customerId: string;
   customerName?: string;
   serviceAddress?: string;
   technicians: Technician[];
+  planName?: string;
 };
-
-const JOB_TEMPLATES = [
-  {
-    id: "weekly-mowing",
-    label: "Weekly Mowing",
-    title: "Weekly Mowing",
-    notes: "Mow front and back lawn, edge driveway and walkways, blow clippings.",
-  },
-  {
-    id: "hedge-trimming",
-    label: "Hedge Trimming",
-    title: "Hedge Trimming",
-    notes: "Trim hedges, shape shrubs, clean up and haul away clippings.",
-  },
-  {
-    id: "yard-cleanup",
-    label: "Yard Cleanup",
-    title: "Yard Cleanup",
-    notes: "Leaf cleanup, debris removal, weed beds, and final blow-off.",
-  },
-  {
-    id: "mulch-refresh",
-    label: "Mulch Refresh",
-    title: "Mulch Refresh",
-    notes: "Refresh mulch in beds, edge borders, weed and tidy planting areas.",
-  },
-];
 
 type FormErrors = {
   title: string;
@@ -55,10 +37,13 @@ export function CreateJobForm({
   customerName,
   serviceAddress,
   technicians,
+  planName = "basic",
 }: CreateJobFormProps) {
   const router = useRouter();
+  const hasTemplates = planName === "pro" || planName === "premier";
 
-  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [dbTemplates, setDbTemplates] = useState<JobTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [technicianId, setTechnicianId] = useState("");
   const [title, setTitle] = useState("");
   const [serviceDate, setServiceDate] = useState("");
@@ -76,18 +61,21 @@ export function CreateJobForm({
     scheduledEnd: "",
   });
 
+  useEffect(() => {
+    if (!hasTemplates) return;
+    fetch("/api/job-templates")
+      .then((r) => r.json())
+      .then((d) => setDbTemplates(d.templates ?? []))
+      .catch(() => {});
+  }, [hasTemplates]);
+
   function applyTemplate(templateId: string) {
-    setSelectedTemplate(templateId);
-
-    const template = JOB_TEMPLATES.find((item) => item.id === templateId);
+    setSelectedTemplateId(templateId);
+    const template = dbTemplates.find((t) => t.id === templateId);
     if (!template) return;
-
     setTitle(template.title);
-    setNotes(template.notes);
-    setErrors((prev) => ({
-      ...prev,
-      title: "",
-    }));
+    setNotes(template.notes ?? "");
+    setErrors((prev) => ({ ...prev, title: "" }));
     setErrorMessage("");
     setSuccessMessage("");
   }
@@ -153,7 +141,7 @@ export function CreateJobForm({
   }, [title, serviceDate, scheduledStart, scheduledEnd]);
 
   function handleCancel() {
-    setSelectedTemplate("");
+    setSelectedTemplateId("");
     setTechnicianId("");
     setTitle("");
     setServiceDate("");
@@ -211,6 +199,7 @@ export function CreateJobForm({
           scheduled_end: scheduledEnd || null,
           status,
           notes: notes.trim() || null,
+          template_id: selectedTemplateId || null,
         }),
       });
 
@@ -254,20 +243,32 @@ export function CreateJobForm({
       ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Field label="Use a Template">
-          <select
-            value={selectedTemplate}
-            onChange={(e) => applyTemplate(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-          >
-            <option value="">Choose a job template (optional)</option>
-            {JOB_TEMPLATES.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {hasTemplates ? (
+          <Field label="Use a Template">
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => applyTemplate(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+            >
+              <option value="">Choose a job template (optional)</option>
+              {dbTemplates.map((t) => (
+                <option key={t.id} value={t.id}>{t.title}</option>
+              ))}
+            </select>
+            {dbTemplates.length === 0 && (
+              <p className="mt-1 text-xs text-slate-400">
+                No templates yet.{" "}
+                <a href="/job-templates" className="text-emerald-600 hover:underline">Create one →</a>
+              </p>
+            )}
+          </Field>
+        ) : (
+          <Field label="Job Templates">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              <a href="/settings?tab=billing" className="font-medium text-emerald-600 hover:underline">Upgrade to Pro</a> to create reusable job templates with pre-filled line items and notes.
+            </div>
+          </Field>
+        )}
 
         <Field label="Technician">
           <select

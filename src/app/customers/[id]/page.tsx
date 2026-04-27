@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { createClient } from "../../../lib/supabase/server";
 import { getTeamContext } from "../../../lib/team";
+import { getUserPlanInfo } from "../../../lib/plan-guard";
 import { JobActions } from "../../../components/jobs/job-actions";
 import { CreateJobForm } from "../../../components/jobs/create-job-form";
 import { CreateInvoiceForm } from "../../../components/invoices/create-invoice-form";
@@ -42,6 +43,8 @@ if (!user) {
   if (!customer) {
     notFound();
   }
+
+  const { planName } = await getUserPlanInfo(ownerId);
 
   const [{ data: jobs }, { data: invoices }, { data: technicians }] =
     await Promise.all([
@@ -170,6 +173,7 @@ if (!user) {
                   customerName={customer.name}
                   serviceAddress={customer.address}
                   technicians={technicianList}
+                  planName={planName}
                 />
               </div>
             </div>
