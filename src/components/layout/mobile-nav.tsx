@@ -16,21 +16,27 @@ import {
   FunnelIcon,
   CalculatorIcon,
   ChartBarIcon,
+  BanknotesIcon,
+  RectangleStackIcon,
   Bars3Icon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
-  { href: "/customers", label: "Customers", icon: UsersIcon },
-  { href: "/leads", label: "Leads", icon: FunnelIcon },
-  { href: "/estimates", label: "Estimates", icon: CalculatorIcon },
-  { href: "/jobs", label: "Jobs", icon: ClipboardDocumentListIcon },
-  { href: "/schedule", label: "Schedule", icon: CalendarDaysIcon },
-  { href: "/invoices", label: "Invoices", icon: DocumentTextIcon },
-  { href: "/tasks", label: "Tasks", icon: CheckCircleIcon },
-  { href: "/reports", label: "Reports", icon: ChartBarIcon },
-  { href: "/settings", label: "Settings", icon: Cog6ToothIcon },
+const allNavItems = [
+  { href: "/dashboard",     label: "Dashboard",     icon: HomeIcon,                  technicianVisible: true  },
+  { href: "/customers",     label: "Customers",     icon: UsersIcon,                 technicianVisible: false },
+  { href: "/leads",         label: "Leads",         icon: FunnelIcon,                technicianVisible: false },
+  { href: "/estimates",     label: "Estimates",     icon: CalculatorIcon,            technicianVisible: false },
+  { href: "/jobs",          label: "Jobs",          icon: ClipboardDocumentListIcon, technicianVisible: true  },
+  { href: "/job-templates", label: "Job Templates", icon: RectangleStackIcon,        technicianVisible: false },
+  { href: "/schedule",      label: "Schedule",      icon: CalendarDaysIcon,          technicianVisible: true  },
+  { href: "/technicians",   label: "Technicians",   icon: WrenchScrewdriverIcon,     technicianVisible: false },
+  { href: "/invoices",      label: "Invoices",      icon: DocumentTextIcon,          technicianVisible: false },
+  { href: "/tasks",         label: "Tasks",         icon: CheckCircleIcon,           technicianVisible: false },
+  { href: "/reports",       label: "Reports",       icon: ChartBarIcon,              technicianVisible: false },
+  { href: "/expenses",      label: "Expenses",      icon: BanknotesIcon,             technicianVisible: false },
+  { href: "/settings",      label: "Settings",      icon: Cog6ToothIcon,             technicianVisible: false },
 ];
 
 export function MobileMenuButton({ onClick }: { onClick: () => void }) {
@@ -45,13 +51,17 @@ export function MobileMenuButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function MobileNav() {
+export function MobileNav({ role }: { role?: string | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const isTechnician = role === "technician";
+  const navItems = isTechnician
+    ? allNavItems.filter((item) => item.technicianVisible)
+    : allNavItems;
 
   return (
     <>
-      {/* Hamburger button — only visible on mobile */}
+      {/* Hamburger button */}
       <button
         onClick={() => setOpen(true)}
         className="rounded-lg p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white lg:hidden"

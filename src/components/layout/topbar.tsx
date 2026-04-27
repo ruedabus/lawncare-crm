@@ -16,9 +16,9 @@ export async function Topbar({ title, backHref }: TopbarProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { ownerId } = user
+  const { ownerId, role } = user
     ? await getTeamContext(supabase, user.id)
-    : { ownerId: "" };
+    : { ownerId: "", role: null };
 
   const { data: settings } = await supabase
     .from("settings")
@@ -37,7 +37,7 @@ export async function Topbar({ title, backHref }: TopbarProps) {
         {/* Left: hamburger (mobile) + back arrow + title */}
         <div className="flex min-w-0 items-center gap-3">
           {/* Mobile nav drawer */}
-          <MobileNav />
+          <MobileNav role={role} />
 
           {backHref && (
             <Link
