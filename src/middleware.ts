@@ -1,12 +1,1 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "./lib/supabase/middleware";
-
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
-}
-
-export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|docx|pdf|xlsx|zip)$).*)",
-  ],
-};
+// Intentionally empty — this project uses src/proxy.ts as the Vercel edge proxy.
