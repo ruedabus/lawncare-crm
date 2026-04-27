@@ -77,7 +77,17 @@ export default async function InvoicePage({ params, searchParams }: Props) {
 
           {/* Details grid */}
           <div className="grid gap-4 p-6 sm:grid-cols-2">
-            <Detail label="Amount" value={`$${Number(inv.amount).toFixed(2)}`} large />
+            <Detail label="Invoice Amount" value={`$${Number(inv.amount).toFixed(2)}`} large />
+            {inv.tip_amount && Number(inv.tip_amount) > 0 ? (
+              <>
+                <Detail label="Tip" value={`$${Number(inv.tip_amount).toFixed(2)}`} highlight="tip" />
+                <Detail
+                  label="Total Charged"
+                  value={`$${(Number(inv.amount) + Number(inv.tip_amount)).toFixed(2)}`}
+                  large
+                />
+              </>
+            ) : null}
             <Detail
               label="Due Date"
               value={inv.due_date
@@ -141,15 +151,26 @@ function Detail({
   label,
   value,
   large,
+  highlight,
 }: {
   label: string;
   value: string;
   large?: boolean;
+  highlight?: "tip";
 }) {
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={`mt-1 ${large ? "text-2xl font-bold text-slate-900" : "text-sm text-slate-700"}`}>
+      <p
+        className={`mt-1 ${
+          large
+            ? "text-2xl font-bold text-slate-900"
+            : highlight === "tip"
+            ? "text-sm font-semibold text-emerald-600"
+            : "text-sm text-slate-700"
+        }`}
+      >
+        {highlight === "tip" && <span className="mr-1">💚</span>}
         {value}
       </p>
     </div>

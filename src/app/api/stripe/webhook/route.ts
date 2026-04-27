@@ -39,12 +39,17 @@ export async function POST(request: Request) {
       const paymentStatus = session.payment_status as string;
 
       if (invoiceId && paymentStatus === "paid") {
+        const metadata = (session.metadata as Record<string, string>) ?? {};
+        const tipAmountCents = parseInt(metadata.tip_amount_cents ?? "0", 10);
+        const tipAmount = tipAmountCents > 0 ? tipAmountCents / 100 : null;
+
         const { data: invoice, error } = await supabase
           .from("invoices")
           .update({
             status: "paid",
             paid_at: new Date().toISOString(),
             stripe_session_id: session.id as string,
+            ...(tipAmount !== null ? { tip_amount: tipAmount } : {}),
           })
           .eq("id", invoiceId)
           .select()

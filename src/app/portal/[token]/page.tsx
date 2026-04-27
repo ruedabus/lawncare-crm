@@ -43,6 +43,7 @@ type PortalData = {
   invoices: Invoice[];
   jobs: Job[];
   business: Business;
+  tips_enabled: boolean;
 };
 
 type Tab = "invoices" | "history" | "contact" | "request";
@@ -120,7 +121,7 @@ export default function CustomerPortalPage() {
     );
   }
 
-  const { customer, invoices, jobs, business } = data;
+  const { customer, invoices, jobs, business, tips_enabled } = data;
   const outstanding = invoices.filter((i) => i.status !== "paid");
   const paid = invoices.filter((i) => i.status === "paid");
 
@@ -173,7 +174,7 @@ export default function CustomerPortalPage() {
       {/* Content */}
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
         {activeTab === "invoices" && (
-          <InvoicesTab invoices={invoices} outstanding={outstanding} paid={paid} token={token} />
+          <InvoicesTab invoices={invoices} outstanding={outstanding} paid={paid} token={token} tipsEnabled={tips_enabled} />
         )}
         {activeTab === "history" && <HistoryTab jobs={jobs} />}
         {activeTab === "contact" && <ContactTab customer={customer} token={token} />}
@@ -193,27 +194,134 @@ export default function CustomerPortalPage() {
   );
 }
 
+// ── Tip Selector ──────────────────────────────────────────────────────────────
+
+const TIP_PRESETS = [
+  { label: "10%", pct: 0.10 },
+  { label: "15%", pct: 0.15 },
+  { label: "20%", pct: 0.20 },
+];
+
+function TipSelector({
+  invoiceAmount,
+  onTipChange,
+}: {
+  invoiceAmount: number;
+  onTipChange: (tipCents: number) => void;
+}) {
+  const [selectedPct, setSelectedPct] = useState<number | null>(null);
+  const [customDollars, setCustomDollars] = useState("");
+
+  function selectPreset(pct: number) {
+    setSelectedPct(pct);
+    setCustomDollars("");
+    onTipChange(Math.round(invoiceAmount * pct * 100));
+  }
+
+  function handleCustom(val: string) {
+    setSelectedPct(null);
+    setCustomDollars(val);
+    const dollars = parseFloat(val);
+    onTipChange(isNaN(dollars) || dollars < 0 ? 0 : Math.round(dollars * 100));
+  }
+
+  function clearTip() {
+    setSelectedPct(null);
+    setCustomDollars("");
+    onTipChange(0);
+  }
+
+  const activeTipDollars = selectedPct !== null
+    ? invoiceAmount * selectedPct
+    : parseFloat(customDollars) || 0;
+
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+      <p className="mb-3 text-sm font-semibold text-slate-700">Add a tip? 💚</p>
+      <div className="flex flex-wrap gap-2">
+        {TIP_PRESETS.map(({ label, pct }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => selectPreset(pct)}
+            className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+              selectedPct === pct
+                ? "border-emerald-600 bg-emerald-600 text-white"
+                : "border-slate-300 bg-white text-slate-700 hover:border-emerald-400"
+            }`}
+          >
+            {label}
+            <span className="ml-1 text-xs opacity-75">
+              ({fmt(invoiceAmount * pct)})
+            </span>
+          </button>
+        ))}
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Custom"
+            value={customDollars}
+            onChange={(e) => handleCustom(e.target.value)}
+            className={`w-28 rounded-lg border py-2 pl-7 pr-3 text-sm font-semibold text-slate-700 outline-none transition focus:ring-2 focus:ring-emerald-100 ${
+              customDollars && selectedPct === null
+                ? "border-emerald-600 bg-white"
+                : "border-slate-300 bg-white"
+            }`}
+          />
+        </div>
+        {activeTipDollars > 0 && (
+          <button
+            type="button"
+            onClick={clearTip}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400 transition hover:text-slate-600"
+          >
+            No tip
+          </button>
+        )}
+      </div>
+      {activeTipDollars > 0 && (
+        <p className="mt-2 text-xs text-emerald-700">
+          Tip: {fmt(activeTipDollars)} · Total charged: {fmt(invoiceAmount + activeTipDollars)}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Invoices Tab ──────────────────────────────────────────────────────────────
 
-function InvoicesTab({ invoices, outstanding, paid, token }: {
+function InvoicesTab({ invoices, outstanding, paid, token, tipsEnabled }: {
   invoices: Invoice[];
   outstanding: Invoice[];
   paid: Invoice[];
   token: string;
+  tipsEnabled: boolean;
 }) {
   const [paying, setPaying] = useState<string | null>(null);
+  const [payError, setPayError] = useState("");
+  // Track tip amounts per invoice (in cents)
+  const [tipCents, setTipCents] = useState<Record<string, number>>({});
 
   async function handlePay(invoiceId: string) {
     setPaying(invoiceId);
+    setPayError("");
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch(`/api/portal/${token}/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceId }),
+        body: JSON.stringify({
+          invoiceId,
+          tipAmountCents: tipCents[invoiceId] ?? 0,
+        }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
       if (data.url) window.location.href = data.url;
-    } catch {
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Payment failed.");
       setPaying(null);
     }
   }
@@ -227,26 +335,43 @@ function InvoicesTab({ invoices, outstanding, paid, token }: {
       {outstanding.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Outstanding</h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {outstanding.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div>
-                  <p className="font-medium text-slate-900">{inv.title}</p>
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    {fmtDate(inv.created_at)}
-                    {inv.due_date && ` · Due ${fmtDate(inv.due_date)}`}
-                  </p>
-                  <div className="mt-1"><StatusBadge status={inv.status} /></div>
+              <div key={inv.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-slate-900">{inv.title}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {fmtDate(inv.created_at)}
+                      {inv.due_date && ` · Due ${fmtDate(inv.due_date)}`}
+                    </p>
+                    <div className="mt-1"><StatusBadge status={inv.status} /></div>
+                  </div>
+                  <p className="text-lg font-bold text-slate-900 shrink-0">{fmt(inv.amount)}</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <p className="text-lg font-bold text-slate-900">{fmt(inv.amount)}</p>
+
+                {tipsEnabled && (
+                  <TipSelector
+                    invoiceAmount={Number(inv.amount)}
+                    onTipChange={(cents) =>
+                      setTipCents((prev) => ({ ...prev, [inv.id]: cents }))
+                    }
+                  />
+                )}
+
+                <div className="flex flex-col gap-2">
                   <button
                     onClick={() => handlePay(inv.id)}
                     disabled={paying === inv.id}
-                    className="rounded-xl bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+                    className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
                   >
-                    {paying === inv.id ? "Loading…" : "Pay Now"}
+                    {paying === inv.id
+                      ? "Redirecting to payment…"
+                      : `Pay ${fmt(Number(inv.amount) + (tipCents[inv.id] ?? 0) / 100)}`}
                   </button>
+                  {payError && paying !== inv.id && (
+                    <p className="text-center text-xs text-red-500">{payError}</p>
+                  )}
                 </div>
               </div>
             ))}

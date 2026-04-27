@@ -37,6 +37,8 @@ export type CheckoutSessionParams = {
   connectedAccountId?: string;
   /** Platform fee in percent (e.g. 0.5 = 0.5%). Only applied when connectedAccountId is set. */
   platformFeePercent?: number;
+  /** Optional customer tip in cents — added as a separate line item */
+  tipAmountCents?: number;
 };
 
 export type CheckoutSession = {
@@ -56,6 +58,8 @@ export async function createCheckoutSession(
       ? Math.round(params.amountCents * (feePercent / 100))
       : 0;
 
+  const tipCents = params.tipAmountCents ?? 0;
+
   const body = encode({
     mode: "payment",
     "line_items[0][price_data][currency]": "usd",
@@ -64,7 +68,17 @@ export async function createCheckoutSession(
       params.description ?? "Lawn care services",
     "line_items[0][price_data][unit_amount]": params.amountCents,
     "line_items[0][quantity]": 1,
+    // Optional tip line item
+    ...(tipCents > 0
+      ? {
+          "line_items[1][price_data][currency]": "usd",
+          "line_items[1][price_data][product_data][name]": "Tip — Thank you! 🙏",
+          "line_items[1][price_data][unit_amount]": tipCents,
+          "line_items[1][quantity]": 1,
+        }
+      : {}),
     "metadata[invoice_id]": params.invoiceId,
+    ...(tipCents > 0 ? { "metadata[tip_amount_cents]": tipCents } : {}),
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     ...(params.customerEmail ? { customer_email: params.customerEmail } : {}),
