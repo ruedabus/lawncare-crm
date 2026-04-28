@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { date, category, description, amount, notes } = body;
+  const { date, category, description, amount, notes, technician_id } = body;
 
   if (!date || !category || !description || amount == null) {
     return NextResponse.json({ error: "Date, category, description, and amount are required." }, { status: 400 });
@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       description: description.trim(),
       amount: parsedAmount,
       notes: notes?.trim() || null,
+      technician_id: technician_id || null,
     }])
     .select()
     .single();

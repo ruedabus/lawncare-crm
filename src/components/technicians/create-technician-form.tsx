@@ -24,6 +24,7 @@ export function CreateTechnicianForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [taxId, setTaxId] = useState("");
   const [color, setColor] = useState("#2563eb");
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -85,6 +86,7 @@ export function CreateTechnicianForm() {
     setName("");
     setEmail("");
     setPhone("");
+    setTaxId("");
     setColor("#2563eb");
     setErrors({
       name: "",
@@ -120,6 +122,7 @@ export function CreateTechnicianForm() {
           email: email.trim() || null,
           phone: phone.trim() || null,
           color,
+          tax_id: taxId.trim() || null,
         }),
       });
 
@@ -223,6 +226,17 @@ export function CreateTechnicianForm() {
           {errors.phone ? (
             <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
           ) : null}
+        </Field>
+
+        <Field label="Tax ID (SSN or EIN — for 1099 reporting)">
+          <input
+            type="text"
+            value={taxId}
+            onChange={(e) => setTaxId(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+            placeholder="XXX-XX-XXXX (optional)"
+          />
+          <p className="mt-1 text-xs text-slate-400">Only required for contractors paid $600+ per year.</p>
         </Field>
 
         <Field label="Color">

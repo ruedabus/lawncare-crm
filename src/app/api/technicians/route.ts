@@ -6,7 +6,7 @@ import { getTeamContext, canWrite } from "../../../lib/team";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, phone, color } = body;
+    const { name, email, phone, color, tax_id } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
           email: email?.trim() || null,
           phone: phone?.trim() || null,
           color: color || "#2563eb",
+          tax_id: tax_id?.trim() || null,
           is_active: true,
         },
       ])

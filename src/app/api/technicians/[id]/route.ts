@@ -39,6 +39,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (body.email !== undefined) updates.email = body.email?.trim() || null;
     if (body.phone !== undefined) updates.phone = body.phone?.trim() || null;
     if (body.color !== undefined) updates.color = body.color || "#2563eb";
+    if (body.tax_id !== undefined) updates.tax_id = body.tax_id?.trim() || null;
     if (body.is_active !== undefined) updates.is_active = body.is_active;
 
     const { data, error } = await supabase

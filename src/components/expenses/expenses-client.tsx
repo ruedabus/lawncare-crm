@@ -9,6 +9,13 @@ export type Expense = {
   description: string;
   amount: number;
   notes: string | null;
+  technician_id: string | null;
+};
+
+export type TechnicianRef = {
+  id: string;
+  name: string;
+  tax_id: string | null;
 };
 
 const CATEGORIES = [
@@ -35,24 +42,31 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Other":          "bg-gray-100 text-gray-700",
 };
 
+const LABOR_CATEGORIES = ["Labor"];
+
 const emptyForm = () => ({
   date: new Date().toISOString().split("T")[0],
   category: "Fuel",
   description: "",
   amount: "",
   notes: "",
+  technician_id: "",
 });
 
-type Tab = "expenses" | "reports";
+type Tab = "expenses" | "reports" | "tax";
 
 export function ExpensesClient({
   initialExpenses,
   planName,
   hasReports,
+  hasTaxReporting,
+  technicians,
 }: {
   initialExpenses: Expense[];
   planName: string;
   hasReports: boolean;
+  hasTaxReporting: boolean;
+  technicians: TechnicianRef[];
 }) {
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [tab, setTab] = useState<Tab>("expenses");
@@ -93,6 +107,7 @@ export function ExpensesClient({
       description: exp.description,
       amount: String(exp.amount),
       notes: exp.notes ?? "",
+      technician_id: exp.technician_id ?? "",
     });
     setFormError("");
     setShowForm(true);
@@ -159,11 +174,16 @@ export function ExpensesClient({
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 w-fit">
-        <TabBtn active={tab === "expenses"} onClick={() => setTab("expenses")}>Expenses</TabBtn>
-        <TabBtn active={tab === "reports"} onClick={() => setTab("reports")}>
-          Reports {!hasReports && <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Premier</span>}
-        </TabBtn>
+      <div className="overflow-x-auto">
+        <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 w-fit min-w-max">
+          <TabBtn active={tab === "expenses"} onClick={() => setTab("expenses")}>Expenses</TabBtn>
+          <TabBtn active={tab === "reports"} onClick={() => setTab("reports")}>
+            Reports {!hasReports && <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Premier</span>}
+          </TabBtn>
+          <TabBtn active={tab === "tax"} onClick={() => setTab("tax")}>
+            Tax Reports {!hasTaxReporting && <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Premier</span>}
+          </TabBtn>
+        </div>
       </div>
 
       {tab === "expenses" && (
@@ -217,6 +237,23 @@ export function ExpensesClient({
                   </select>
                 </div>
               </div>
+
+              {/* Technician picker — only shown when category is Labor */}
+              {LABOR_CATEGORIES.includes(form.category) && technicians.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Technician (for 1099 tracking)</label>
+                  <select
+                    value={form.technician_id}
+                    onChange={(e) => setForm({ ...form, technician_id: e.target.value })}
+                    className={selectCls}
+                  >
+                    <option value="">— Not linked to a technician —</option>
+                    {technicians.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -343,6 +380,188 @@ export function ExpensesClient({
 
       {tab === "reports" && (
         <ReportsTab expenses={expenses} hasReports={hasReports} planName={planName} />
+      )}
+
+      {tab === "tax" && (
+        <TaxReportsTab
+          expenses={expenses}
+          technicians={technicians}
+          hasTaxReporting={hasTaxReporting}
+          planName={planName}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Tax Reports tab ───────────────────────────────────────────────────────────
+
+const IRS_THRESHOLD = 600;
+
+function TaxReportsTab({
+  expenses,
+  technicians,
+  hasTaxReporting,
+  planName,
+}: {
+  expenses: Expense[];
+  technicians: TechnicianRef[];
+  hasTaxReporting: boolean;
+  planName: string;
+}) {
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  if (!hasTaxReporting) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center space-y-3">
+        <div className="text-3xl">🧾</div>
+        <p className="text-base font-semibold text-amber-900">Tax Reports — Premier only</p>
+        <p className="text-sm text-amber-800 max-w-md mx-auto">
+          Upgrade to Premier to track contractor payments, generate 1099-NEC summaries, and export CSV reports for tax filing.
+        </p>
+        <a
+          href="/settings?tab=billing"
+          className="inline-flex items-center rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition"
+        >
+          Upgrade to Premier →
+        </a>
+        <p className="text-xs text-amber-700">Currently on {planName} plan</p>
+      </div>
+    );
+  }
+
+  // Build contractor pay totals for selected year
+  const techMap = useMemo(() => {
+    const map = new Map<string, { name: string; tax_id: string | null; total: number }>();
+    for (const tech of technicians) {
+      map.set(tech.id, { name: tech.name, tax_id: tech.tax_id, total: 0 });
+    }
+    for (const exp of expenses) {
+      if (!exp.technician_id) continue;
+      if (!exp.date.startsWith(String(year))) continue;
+      if (!LABOR_CATEGORIES.includes(exp.category)) continue;
+      const entry = map.get(exp.technician_id);
+      if (entry) entry.total += Number(exp.amount);
+    }
+    return Array.from(map.values()).filter((t) => t.total > 0).sort((a, b) => b.total - a.total);
+  }, [expenses, technicians, year]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const exp of expenses) {
+      if (exp.technician_id && LABOR_CATEGORIES.includes(exp.category)) {
+        years.add(Number(exp.date.slice(0, 4)));
+      }
+    }
+    if (years.size === 0) years.add(new Date().getFullYear());
+    return Array.from(years).sort((a, b) => b - a);
+  }, [expenses]);
+
+  function exportCSV() {
+    const rows = [
+      ["Technician Name", "Tax ID (SSN/EIN)", `Total Paid ${year}`, "1099-NEC Required"],
+      ...techMap.map((t) => [
+        t.name,
+        t.tax_id ?? "—",
+        t.total.toFixed(2),
+        t.total >= IRS_THRESHOLD ? "Yes" : "No",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `1099-contractor-pay-${year}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header row */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-slate-900">1099-NEC Contractor Pay Summary</h3>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Labor expenses linked to technicians. Anyone paid $600+ in a calendar year requires a 1099-NEC.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className={selectCls}
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          {techMap.length > 0 && (
+            <button
+              onClick={exportCSV}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+            >
+              Export CSV
+            </button>
+          )}
+        </div>
+      </div>
+
+      {techMap.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
+          <p className="text-sm font-medium text-slate-500">No contractor pay logged for {year}</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Add Labor expenses and link them to a technician to track 1099 pay here.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-medium text-slate-500">
+                <th className="px-4 py-3">Technician</th>
+                <th className="px-4 py-3">Tax ID (SSN/EIN)</th>
+                <th className="px-4 py-3 text-right">Total Paid {year}</th>
+                <th className="px-4 py-3 text-center">1099-NEC</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {techMap.map((t) => {
+                const needs1099 = t.total >= IRS_THRESHOLD;
+                return (
+                  <tr key={t.name} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium text-slate-900">{t.name}</td>
+                    <td className="px-4 py-3 text-slate-500 font-mono text-xs">
+                      {t.tax_id ?? (
+                        <span className="text-amber-600 font-sans font-medium">Missing — add in Technicians</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                      ${t.total.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {needs1099 ? (
+                        <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+                          Required
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                          Not yet
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-400">
+            IRS threshold: $600/year per contractor. Export CSV to file 1099-NEC forms via{" "}
+            <a href="https://www.track1099.com" target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline">Track1099</a> or{" "}
+            <a href="https://www.tax1099.com" target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline">Tax1099</a>.
+          </div>
+        </div>
       )}
     </div>
   );

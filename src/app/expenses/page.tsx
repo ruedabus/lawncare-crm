@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { getTeamContext } from "../../lib/team";
 import { AppShell } from "../../components/layout/app-shell";
 import { getUserPlanInfo } from "../../lib/plan-guard";
 import { UpgradeWall } from "../../components/plan/upgrade-wall";
@@ -10,6 +11,7 @@ export default async function ExpensesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { ownerId } = await getTeamContext(supabase, user.id);
   const { config, planName } = await getUserPlanInfo();
 
   if (!config.expenseLogging) {
@@ -24,10 +26,10 @@ export default async function ExpensesPage() {
     );
   }
 
-  const { data: expenses } = await supabase
-    .from("expenses")
-    .select("*")
-    .order("date", { ascending: false });
+  const [{ data: expenses }, { data: technicians }] = await Promise.all([
+    supabase.from("expenses").select("*").eq("user_id", ownerId).order("date", { ascending: false }),
+    supabase.from("technicians").select("id, name, tax_id").eq("user_id", ownerId).eq("is_active", true).order("name"),
+  ]);
 
   return (
     <AppShell title="Expenses">
@@ -35,6 +37,8 @@ export default async function ExpensesPage() {
         initialExpenses={expenses ?? []}
         planName={planName}
         hasReports={config.expenseReports}
+        hasTaxReporting={config.taxReporting}
+        technicians={technicians ?? []}
       />
     </AppShell>
   );

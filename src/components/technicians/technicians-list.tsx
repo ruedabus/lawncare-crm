@@ -9,6 +9,7 @@ type Technician = {
   email: string | null;
   phone: string | null;
   color: string | null;
+  tax_id: string | null;
   is_active: boolean;
   created_at: string;
 };
@@ -48,6 +49,7 @@ export function TechniciansList({
     email: "",
     phone: "",
     color: "#2563eb",
+    tax_id: "",
     is_active: true,
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({
@@ -94,6 +96,7 @@ export function TechniciansList({
       email: tech.email ?? "",
       phone: tech.phone ?? "",
       color: tech.color ?? "#2563eb",
+      tax_id: tech.tax_id ?? "",
       is_active: tech.is_active,
     });
     setEditErrors({
@@ -135,6 +138,7 @@ export function TechniciansList({
           email: formState.email.trim() || null,
           phone: formState.phone.trim() || null,
           color: formState.color,
+          tax_id: formState.tax_id.trim() || null,
           is_active: formState.is_active,
         }),
       });
@@ -321,6 +325,21 @@ export function TechniciansList({
                               phone: e.target.value,
                             }))
                           }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Tax ID (SSN / EIN)
+                        </label>
+                        <input
+                          type="text"
+                          value={formState.tax_id}
+                          onChange={(e) =>
+                            setFormState((prev) => ({ ...prev, tax_id: e.target.value }))
+                          }
+                          placeholder="XXX-XX-XXXX (optional)"
                           className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                         />
                       </div>

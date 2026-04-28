@@ -20,7 +20,7 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { date, category, description, amount, notes } = body;
+  const { date, category, description, amount, notes, technician_id } = body;
 
   const updates: Record<string, unknown> = {};
   if (date !== undefined) updates.date = date;
@@ -28,6 +28,7 @@ export async function PATCH(
   if (description !== undefined) updates.description = description.trim();
   if (amount !== undefined) updates.amount = Number(amount);
   if (notes !== undefined) updates.notes = notes?.trim() || null;
+  if (technician_id !== undefined) updates.technician_id = technician_id || null;
 
   const { data, error } = await supabase
     .from("expenses")

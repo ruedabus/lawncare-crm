@@ -21,7 +21,7 @@ export default async function TechniciansPage() {
   // 📥 Fetch technicians (scoped to owner)
   const { data: technicians, error } = await supabase
     .from("technicians")
-    .select("id, name, email, phone, color, is_active, created_at")
+    .select("id, name, email, phone, color, tax_id, is_active, created_at")
     .eq("user_id", ownerId)
     .order("name", { ascending: true });
 
@@ -31,6 +31,7 @@ export default async function TechniciansPage() {
     email: tech.email,
     phone: tech.phone,
     color: tech.color,
+    tax_id: tech.tax_id,
     is_active: tech.is_active,
     created_at: tech.created_at,
   }));
