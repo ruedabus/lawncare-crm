@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { createClient } from "../../lib/supabase/client";
+import { getPlanConfig } from "../../lib/plans";
 import { TeamTab } from "./team-tab";
 
 type Settings = {
@@ -112,6 +114,7 @@ export function SettingsTabs({
         <QrCodeTab
           slug={settings.lead_capture_slug ?? ""}
           businessName={settings.business_name}
+          multipleQrCodes={getPlanConfig(settings.plan_name).multipleQrCodes}
           onGoToBusinessProfile={() => setActiveTab("business")}
         />
       )}
@@ -752,18 +755,77 @@ function NotificationsTab({ settings }: { settings: Settings }) {
 
 // ── QR Lead Capture ──────────────────────────────────────────────────────────
 
-function QrCodeTab({ slug: initialSlug, businessName, onGoToBusinessProfile }: { slug: string; businessName?: string; onGoToBusinessProfile?: () => void }) {
+type QrCode = { id: string; slug: string; label: string; created_at: string };
+
+function QrCodeTab({ slug: initialSlug, businessName, multipleQrCodes, onGoToBusinessProfile }: { slug: string; businessName?: string; multipleQrCodes?: boolean; onGoToBusinessProfile?: () => void }) {
   const [slug, setSlug] = useState(initialSlug);
   const [editSlug, setEditSlug] = useState(initialSlug);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error" | "generating">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // Additional QR codes
+  const [codes, setCodes] = useState<QrCode[]>([]);
+  const [loadingCodes, setLoadingCodes] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [addingCode, setAddingCode] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [expandedCode, setExpandedCode] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://www.yardpilot.net";
   const captureUrl = slug ? `${baseUrl}/leads/capture/${slug}` : "";
   const qrImageUrl = captureUrl
     ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(captureUrl)}&color=1a5c2a&bgcolor=ffffff&format=png`
     : "";
+
+  useEffect(() => {
+    fetch("/api/qr-codes")
+      .then((r) => r.json())
+      .then((d) => { if (d.codes) setCodes(d.codes); })
+      .catch(() => {})
+      .finally(() => setLoadingCodes(false));
+  }, []);
+
+  async function handleAddCode() {
+    if (!newLabel.trim()) { setAddError("Label is required."); return; }
+    setAddingCode(true);
+    setAddError("");
+    try {
+      const res = await fetch("/api/qr-codes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: newLabel.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddError(data.error ?? "Failed to create."); return; }
+      setCodes((prev) => [...prev, data.code]);
+      setNewLabel("");
+      setShowAddForm(false);
+    } finally {
+      setAddingCode(false);
+    }
+  }
+
+  async function handleDeleteCode(id: string) {
+    if (!confirm("Delete this QR code? Any printed codes will stop working.")) return;
+    setDeletingId(id);
+    try {
+      await fetch(`/api/qr-codes/${id}`, { method: "DELETE" });
+      setCodes((prev) => prev.filter((c) => c.id !== id));
+      if (expandedCode === id) setExpandedCode(null);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function copyCodeLink(url: string, id: string) {
+    await navigator.clipboard.writeText(url);
+    setCopiedCode(id);
+    setTimeout(() => setCopiedCode(null), 2000);
+  }
 
   async function generateSlug() {
     setStatus("generating");
@@ -936,6 +998,123 @@ function QrCodeTab({ slug: initialSlug, businessName, onGoToBusinessProfile }: {
               {status === "saved" && <p className="mt-2 text-sm text-emerald-600">✓ Saved</p>}
               {status === "error" && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
             </div>
+          </div>
+        )}
+      </SettingsCard>
+
+      {/* ── Additional QR Codes ── */}
+      <SettingsCard
+        title="Additional QR Codes"
+        description="Create separate QR codes for different campaigns — truck magnets, door hangers, yard signs. Each has a unique link so you can tell them apart in your Leads list."
+      >
+        {!multipleQrCodes ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-center space-y-2">
+            <p className="text-sm font-semibold text-amber-900">Multiple QR Codes — Pro & Premier</p>
+            <p className="text-sm text-amber-800">Upgrade to create unlimited campaign-specific QR codes and track which ones drive the most leads.</p>
+            <a href="/settings?tab=billing" className="inline-flex items-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition mt-1">
+              Upgrade →
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Code list */}
+            {loadingCodes ? (
+              <p className="text-sm text-slate-400">Loading…</p>
+            ) : codes.length === 0 ? (
+              <p className="text-sm text-slate-500">No additional QR codes yet. Create one below.</p>
+            ) : (
+              <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 overflow-hidden">
+                {codes.map((code) => {
+                  const codeUrl = `${baseUrl}/leads/capture/${code.slug}`;
+                  const codeQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(codeUrl)}&color=1a5c2a&bgcolor=ffffff&format=png`;
+                  const isExpanded = expandedCode === code.id;
+                  return (
+                    <div key={code.id} className="bg-white">
+                      <div className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{code.label}</p>
+                          <p className="text-xs text-slate-400 truncate">…/leads/capture/{code.slug}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <button
+                            onClick={() => setExpandedCode(isExpanded ? null : code.id)}
+                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+                          >
+                            {isExpanded ? "Hide QR" : "Show QR"}
+                          </button>
+                          <button
+                            onClick={() => copyCodeLink(codeUrl, code.id)}
+                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+                          >
+                            {copiedCode === code.id ? "✓ Copied" : "Copy"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCode(code.id)}
+                            disabled={deletingId === code.id}
+                            className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition disabled:opacity-50"
+                          >
+                            {deletingId === code.id ? "…" : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-4 flex flex-col items-center gap-3">
+                          <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                            <Image src={codeQrUrl} alt={`QR for ${code.label}`} width={160} height={160} unoptimized />
+                          </div>
+                          <a
+                            href={codeQrUrl}
+                            download={`qr-${code.slug}.png`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-medium text-emerald-600 hover:text-emerald-700 underline"
+                          >
+                            Download QR image
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Add form */}
+            {showAddForm ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                <p className="text-sm font-medium text-slate-700">New QR Code</p>
+                <input
+                  type="text"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder='e.g. "Truck Magnet", "Door Hanger", "Yard Sign"'
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                />
+                {addError && <p className="text-sm text-red-600">{addError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddCode}
+                    disabled={addingCode}
+                    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition"
+                  >
+                    {addingCode ? "Creating…" : "Create QR Code"}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddForm(false); setNewLabel(""); setAddError(""); }}
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="rounded-xl border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-50 transition w-full"
+              >
+                + Create Another QR Code
+              </button>
+            )}
           </div>
         )}
       </SettingsCard>

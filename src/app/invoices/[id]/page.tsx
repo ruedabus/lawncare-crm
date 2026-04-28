@@ -1,8 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
+import { getTeamContext } from "../../../lib/team";
 import { AppShell } from "../../../components/layout/app-shell";
 import InvoiceActions from "../../../components/invoices/invoice-actions";
+import { PaymentQrCode } from "../../../components/invoices/payment-qr-code";
 import PaidSuccessBanner from "./paid-success-banner";
+import { getOrCreatePortalToken } from "../../../lib/portal-token";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -16,6 +19,8 @@ export default async function InvoicePage({ params, searchParams }: Props) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { ownerId } = await getTeamContext(supabase, user.id);
 
   const { data: invoice, error } = await supabase
     .from("invoices")
@@ -37,6 +42,18 @@ export default async function InvoicePage({ params, searchParams }: Props) {
 
   const inv = invoice as InvoiceWithCustomer;
   const customer = inv.customers;
+
+  // Generate/retrieve a portal token for the payment QR code (unpaid invoices only)
+  let portalUrl: string | null = null;
+  if (inv.status !== "paid" && customer?.id) {
+    try {
+      const token = await getOrCreatePortalToken(customer.id, ownerId);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.yardpilot.net";
+      portalUrl = `${appUrl}/portal/${token}`;
+    } catch {
+      // Non-fatal — QR just won't show
+    }
+  }
 
   const statusColors: Record<string, string> = {
     paid: "bg-emerald-100 text-emerald-700",
@@ -128,6 +145,16 @@ export default async function InvoicePage({ params, searchParams }: Props) {
                 {customer.phone && <span>📞 {customer.phone}</span>}
                 {customer.address && <span>📍 {customer.address}</span>}
               </div>
+            </div>
+          )}
+
+          {/* Payment QR Code */}
+          {portalUrl && (
+            <div className="border-t border-slate-100 px-6 py-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Quick Pay
+              </p>
+              <PaymentQrCode portalUrl={portalUrl} />
             </div>
           )}
 

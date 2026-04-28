@@ -11,15 +11,31 @@ export default async function LeadCapturePage({ params }: Props) {
 
   const supabase = createServiceClient();
 
-  const { data: settings } = await supabase
-    .from("settings")
-    .select("business_name, business_phone, business_email")
-    .eq("lead_capture_slug", slug)
+  // Check lead_capture_codes first, then fall back to settings.lead_capture_slug
+  let businessName = "Your Local Lawn Care Pro";
+
+  const { data: codeRow } = await supabase
+    .from("lead_capture_codes")
+    .select("user_id")
+    .eq("slug", slug)
     .maybeSingle();
 
-  if (!settings) notFound();
-
-  const businessName = settings.business_name || "Your Local Lawn Care Pro";
+  if (codeRow) {
+    const { data: settingsRow } = await supabase
+      .from("settings")
+      .select("business_name")
+      .eq("user_id", codeRow.user_id)
+      .maybeSingle();
+    businessName = settingsRow?.business_name || businessName;
+  } else {
+    const { data: settings } = await supabase
+      .from("settings")
+      .select("business_name")
+      .eq("lead_capture_slug", slug)
+      .maybeSingle();
+    if (!settings) notFound();
+    businessName = settings.business_name || businessName;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-100 px-4 py-10">

@@ -21,24 +21,49 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient();
 
-    // Look up the contractor by slug
-    const { data: settings, error: slugError } = await supabase
-      .from("settings")
-      .select("user_id, business_name")
-      .eq("lead_capture_slug", slug)
+    // Look up the contractor by slug — check lead_capture_codes first, then fall back to settings
+    let userId: string | null = null;
+    let businessName: string | null = null;
+
+    const { data: codeRow } = await supabase
+      .from("lead_capture_codes")
+      .select("user_id")
+      .eq("slug", slug)
       .maybeSingle();
 
-    if (slugError || !settings) {
+    if (codeRow) {
+      userId = codeRow.user_id;
+      const { data: settingsRow } = await supabase
+        .from("settings")
+        .select("business_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+      businessName = settingsRow?.business_name ?? null;
+    } else {
+      // Fall back to legacy single-slug on settings table
+      const { data: settings } = await supabase
+        .from("settings")
+        .select("user_id, business_name")
+        .eq("lead_capture_slug", slug)
+        .maybeSingle();
+      if (settings) {
+        userId = settings.user_id;
+        businessName = settings.business_name ?? null;
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { error: "This link is no longer active." },
         { status: 404 }
       );
     }
+    void businessName; // used on capture page, not needed here
 
     // Insert the lead for that contractor
     const { error: insertError } = await supabase.from("leads").insert([
       {
-        user_id: settings.user_id,
+        user_id: userId,
         name: name.trim(),
         phone: phone?.trim() || null,
         email: email?.trim() || null,

@@ -31,6 +31,28 @@ export async function upsertPortalToken(
   return token;
 }
 
+/** Get an existing valid portal token or create a new one. Preserves existing tokens so emailed links stay valid. */
+export async function getOrCreatePortalToken(
+  customerId: string,
+  userId: string
+): Promise<string> {
+  const supabase = createServiceClient();
+
+  // Try to find a valid (non-expired) existing token
+  const { data: existing } = await supabase
+    .from("portal_tokens")
+    .select("token, expires_at")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+
+  if (existing && new Date(existing.expires_at) > new Date()) {
+    return existing.token;
+  }
+
+  // None or expired — create a fresh one
+  return upsertPortalToken(customerId, userId);
+}
+
 /** Validate a token and return the associated customer_id and user_id, or null if invalid/expired. */
 export async function validatePortalToken(
   token: string
