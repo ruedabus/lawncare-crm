@@ -71,6 +71,14 @@ const T = {
         { title: "Mobile Ready", desc: "Run the business from the field with a phone-friendly experience your crew can actually use." },
         { title: "Expense Tracking", desc: "Log fuel, blades, equipment, and every business cost. Premier users get full reports and a live P&L so you always know your real profit." },
         { title: "Smart Estimate", desc: "Enter a property's square footage and get an instant price suggestion based on your own tiers — close more jobs faster." },
+        { title: "Weather Rescheduling", desc: "Get automatic alerts when bad weather threatens your scheduled jobs so you can reschedule before customers are left waiting." },
+        { title: "Payment QR Code", desc: "Show customers a QR code on the spot. They scan, pay, and you're done — no email required." },
+        { title: "1099 Tax Reporting", desc: "Track contractor payments all year, flag anyone over the $600 IRS threshold, and export a CSV ready for filing." },
+        { title: "Team Management", desc: "Invite technicians and staff, assign roles, and control what each person can see and do inside the app." },
+        { title: "Job Templates", desc: "Save your most common jobs as templates so your crew can create new jobs in seconds without re-entering details." },
+        { title: "Batch Invoicing", desc: "Select multiple completed jobs and send all their invoices at once — stop billing one job at a time." },
+        { title: "Payment Reminders", desc: "Automatically follow up on unpaid invoices at 7 and 14 days so you get paid without the awkward calls." },
+        { title: "Customer Tips", desc: "Let happy customers add a tip when they pay online. Every little bit adds up for your crew." },
       ],
     },
     testimonial: {
@@ -117,7 +125,7 @@ const T = {
       secondary: "Log in",
     },
     footer: {
-      features: "Features", pricing: "Pricing", ownerManual: "Owner Manual",
+      features: "Features", pricing: "Pricing", about: "About Us", ownerManual: "Owner Manual",
       customerGuide: "Customer Guide", terms: "Terms of Service",
       privacy: "Privacy Policy", login: "Log in",
     },
@@ -169,6 +177,14 @@ const T = {
         { title: "Listo para celular", desc: "Maneja el negocio desde el campo con una app amigable que tu equipo puede usar desde el tel\u00e9fono." },
         { title: "Control de gastos", desc: "Registra gasolina, herramientas y todos los costos del negocio. Los usuarios Premier tienen reportes completos y un resumen de ganancias en tiempo real." },
         { title: "Cotizaci\u00f3n inteligente", desc: "Ingresa los metros cuadrados de la propiedad y obt\u00e9n una sugerencia de precio instant\u00e1nea basada en tus propias tarifas." },
+        { title: "Reprogramaci\u00f3n por clima", desc: "Recibe alertas autom\u00e1ticas cuando el mal tiempo amenace tus trabajos programados para que puedas reprogramar antes de que tus clientes se queden esperando." },
+        { title: "C\u00f3digo QR de pago", desc: "Mu\u00e9strale a tu cliente un c\u00f3digo QR en el lugar. Escanea, paga y listo \u2014 sin necesidad de correo." },
+        { title: "Reportes de impuestos 1099", desc: "Rastrea los pagos a contratistas todo el a\u00f1o, marca a quienes superen los $600 del IRS y exporta un CSV listo para declarar." },
+        { title: "Gesti\u00f3n de equipo", desc: "Invita a t\u00e9cnicos y personal, asigna roles y controla lo que cada persona puede ver y hacer dentro de la app." },
+        { title: "Plantillas de trabajo", desc: "Guarda tus trabajos m\u00e1s comunes como plantillas para que tu equipo pueda crear nuevos trabajos en segundos sin volver a capturar los datos." },
+        { title: "Facturaci\u00f3n en lote", desc: "Selecciona varios trabajos completados y env\u00eda todas sus facturas de una vez \u2014 deja de facturar un trabajo a la vez." },
+        { title: "Recordatorios de pago", desc: "Da seguimiento autom\u00e1tico a facturas sin pagar a los 7 y 14 d\u00edas para cobrar sin llamadas inc\u00f3modas." },
+        { title: "Propinas de clientes", desc: "Permite que los clientes satisfechos agreguen una propina al pagar en l\u00ednea. Cada d\u00f3lar cuenta para tu equipo." },
       ],
     },
     testimonial: {
@@ -215,7 +231,7 @@ const T = {
       secondary: "Iniciar sesi\u00f3n",
     },
     footer: {
-      features: "Funciones", pricing: "Precios", ownerManual: "Manual del due\u00f1o",
+      features: "Funciones", pricing: "Precios", about: "Sobre nosotros", ownerManual: "Manual del due\u00f1o",
       customerGuide: "Gu\u00eda del cliente", terms: "T\u00e9rminos de servicio",
       privacy: "Pol\u00edtica de privacidad", login: "Iniciar sesi\u00f3n",
     },
@@ -226,14 +242,38 @@ type Lang = keyof typeof T;
 
 // ── Feature icon paths (order matches translation items) ──────────────────────
 const FEATURE_ICONS = [
+  // Invoicing & Payments
   "M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z",
+  // Lead Management
   "M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z",
+  // Scheduling
   "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5",
+  // QR Lead Capture
   "M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z",
+  // Estimates
   "M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z",
+  // Mobile Ready
   "M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3m-3 3h3m-6 3h.008v.008H6V15z",
+  // Expense Tracking
   "M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z",
+  // Smart Estimate
   "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25",
+  // Weather Rescheduling
+  "M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z",
+  // Payment QR Code
+  "M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75z",
+  // 1099 Tax Reporting
+  "M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z",
+  // Team Management
+  "M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z",
+  // Job Templates
+  "M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6",
+  // Batch Invoicing
+  "M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3",
+  // Payment Reminders
+  "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
+  // Customer Tips
+  "M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z",
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -264,6 +304,9 @@ export default function LandingPage() {
               {lang === "en" ? "ES" : "EN"}
             </button>
 
+            <Link href="/about" className="hidden text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:inline-flex">
+              {lang === "en" ? "About" : "Nosotros"}
+            </Link>
             <Link href="/login" className="hidden text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:inline-flex">
               {t.nav.login}
             </Link>
@@ -577,6 +620,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
               <a href="#features" className="hover:text-white">{t.footer.features}</a>
               <a href="#pricing" className="hover:text-white">{t.footer.pricing}</a>
+              <Link href="/about" className="hover:text-white">{t.footer.about}</Link>
               <a href="/YardPilot-Owner-Manual.docx" download className="hover:text-white">{t.footer.ownerManual}</a>
               <a href="/YardPilot-Customer-Guide.docx" download className="hover:text-white">{t.footer.customerGuide}</a>
               <Link href="/terms" className="hover:text-white">{t.footer.terms}</Link>
