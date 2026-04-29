@@ -52,7 +52,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/trial-success") ||
     pathname.startsWith("/portal/") ||
-    pathname.startsWith("/api/portal/");
+    pathname.startsWith("/api/portal/") ||
+    pathname.startsWith("/about");
 
   // 🚫 Not logged in → redirect to login
   if (!user && !isPublicRoute) {
