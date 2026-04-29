@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/tech-reminders",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/customer-sms-reminders",
+      "schedule": "0 23 * * *"
     }
   ]
 }

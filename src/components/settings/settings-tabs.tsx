@@ -22,6 +22,8 @@ type Settings = {
   notify_upcoming_task?: boolean;
   notify_new_lead?: boolean;
   payment_reminders_enabled?: boolean;
+  sms_tech_reminders_enabled?: boolean;
+  sms_customer_reminders_enabled?: boolean;
   lead_capture_slug?: string;
   stripe_account_id?: string | null;
   stripe_customer_id?: string | null;
@@ -651,6 +653,7 @@ function ServiceLocationTab({ settings }: { settings: Settings }) {
 function NotificationsTab({ settings }: { settings: Settings }) {
   const planName = settings.plan_name ?? "basic";
   const hasPaymentReminders = planName === "pro" || planName === "premier";
+  const hasSmsReminders = planName === "pro" || planName === "premier";
 
   const [form, setForm] = useState({
     notify_new_job: settings.notify_new_job ?? true,
@@ -658,6 +661,8 @@ function NotificationsTab({ settings }: { settings: Settings }) {
     notify_upcoming_task: settings.notify_upcoming_task ?? true,
     notify_new_lead: settings.notify_new_lead ?? true,
     payment_reminders_enabled: settings.payment_reminders_enabled ?? true,
+    sms_tech_reminders_enabled: settings.sms_tech_reminders_enabled ?? true,
+    sms_customer_reminders_enabled: settings.sms_customer_reminders_enabled ?? true,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -737,6 +742,55 @@ function NotificationsTab({ settings }: { settings: Settings }) {
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Auto-send 7-day and 14-day follow-up emails for unpaid invoices.{" "}
+                  <a href="/settings?tab=billing" className="font-medium text-emerald-600 hover:underline">
+                    Upgrade to Pro
+                  </a>{" "}
+                  to enable.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── SMS Reminders (Pro + Premier) ── */}
+        <div className="border-t border-slate-100 pt-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">SMS Reminders</p>
+          {hasSmsReminders ? (
+            <div className="space-y-3">
+              <Toggle
+                label="SMS Tech Reminders"
+                description="Text each technician a digest of their jobs for the day at 7 AM. Requires a phone number on each tech's profile."
+                checked={form.sms_tech_reminders_enabled}
+                onChange={(v) => setForm({ ...form, sms_tech_reminders_enabled: v })}
+              />
+              <Toggle
+                label="SMS Customer Appointment Reminders"
+                description="Text customers the evening before their scheduled service. Requires a phone number on each customer's record."
+                checked={form.sms_customer_reminders_enabled}
+                onChange={(v) => setForm({ ...form, sms_customer_reminders_enabled: v })}
+              />
+              <p className="text-xs text-slate-400">
+                SMS delivery requires{" "}
+                <span className="font-semibold text-slate-500">TWILIO_ACCOUNT_SID</span>,{" "}
+                <span className="font-semibold text-slate-500">TWILIO_AUTH_TOKEN</span>, and{" "}
+                <span className="font-semibold text-slate-500">TWILIO_PHONE_NUMBER</span>{" "}
+                to be set in your environment variables.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 opacity-60">
+              <div className="mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-300">
+                <span className="h-4 w-4 translate-x-0.5 rounded-full bg-white shadow" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700">
+                  SMS Reminders
+                  <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    Pro+
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Text techs their daily schedule and remind customers the night before.{" "}
                   <a href="/settings?tab=billing" className="font-medium text-emerald-600 hover:underline">
                     Upgrade to Pro
                   </a>{" "}

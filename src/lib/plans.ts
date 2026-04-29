@@ -21,6 +21,7 @@ export interface PlanConfig {
   tips: boolean;                   // customer tip on invoice payment (Pro + Premier)
   jobTemplates: boolean;           // custom reusable job templates (Pro + Premier)
   taxReporting: boolean;           // 1099 contractor pay tracking & CSV export (Premier only)
+  smsReminders: boolean;           // SMS job reminders to techs & customers (Pro + Premier)
 }
 
 export const PLANS: Record<PlanName, PlanConfig> = {
@@ -42,6 +43,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     tips: false,
     jobTemplates: false,
     taxReporting: false,
+    smsReminders: false,
   },
   pro: {
     customerLimit: 100,
@@ -61,6 +63,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     tips: true,
     jobTemplates: true,
     taxReporting: false,
+    smsReminders: true,
   },
   premier: {
     customerLimit: null,
@@ -80,6 +83,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
     tips: true,
     jobTemplates: true,
     taxReporting: true,
+    smsReminders: true,
   },
 };
 
