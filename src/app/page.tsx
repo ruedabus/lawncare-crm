@@ -79,6 +79,7 @@ const T = {
         { title: "Batch Invoicing", desc: "Select multiple completed jobs and send all their invoices at once — stop billing one job at a time." },
         { title: "Payment Reminders", desc: "Automatically follow up on unpaid invoices at 7 and 14 days so you get paid without the awkward calls." },
         { title: "Customer Tips", desc: "Let happy customers add a tip when they pay online. Every little bit adds up for your crew." },
+        { title: "Easy Data Import", desc: "Switching from Jobber, Yardbook, or a spreadsheet? Upload your customer list as a CSV and import hundreds of contacts in seconds \u2014 no manual re-entry required." },
       ],
     },
     testimonial: {
@@ -185,6 +186,7 @@ const T = {
         { title: "Facturaci\u00f3n en lote", desc: "Selecciona varios trabajos completados y env\u00eda todas sus facturas de una vez \u2014 deja de facturar un trabajo a la vez." },
         { title: "Recordatorios de pago", desc: "Da seguimiento autom\u00e1tico a facturas sin pagar a los 7 y 14 d\u00edas para cobrar sin llamadas inc\u00f3modas." },
         { title: "Propinas de clientes", desc: "Permite que los clientes satisfechos agreguen una propina al pagar en l\u00ednea. Cada d\u00f3lar cuenta para tu equipo." },
+        { title: "Importaci\u00f3n de datos", desc: "\u00bfVienes de Jobber, Yardbook o una hoja de c\u00e1lculo? Sube tu lista de clientes en CSV e importa cientos de contactos en segundos \u2014 sin captura manual." },
       ],
     },
     testimonial: {
@@ -274,6 +276,8 @@ const FEATURE_ICONS = [
   "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
   // Customer Tips
   "M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z",
+  // Easy Data Import
+  "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3",
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
